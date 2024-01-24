@@ -94,10 +94,10 @@ func main() {
 				s.Sync()
 			} else if ev.Key() == tcell.KeyDown {
 				y++
-				// Seek forwards to line after this one
+				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyUp {
 				y--
-				// Seek backwards to line before this one
+				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
 				content[c] = '\n'
 				s.Clear()
