@@ -3,3 +3,5 @@ go 1.21.5
 use ./main
 
 use ./screen
+
+use ./rope
