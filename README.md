@@ -20,6 +20,9 @@ I very much doubt that I will add syntax highlighting.
   - [ ] Command mode (maybe)
 - [ ] Cursor should remember column
 
+- [ ] Undo
+- [ ] Redo
+
 ## Dependencies
 
 I'm using [tcell (note: v2)](https://github.com/gdamore/tcell) to manage writing to/from the terminal.
