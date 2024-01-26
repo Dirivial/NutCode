@@ -70,7 +70,7 @@ func (*Rope) CollectLeaves() []Node {
 }
 
 // Build a string from the entire rope structure
-func (*Rope) Report(start, length int) string {
+func (r *Rope) Report(start, length int) string {
 	return ""
 }
 
@@ -197,4 +197,24 @@ func (n *Node) printNode(depth int) {
 		fmt.Printf("\t")
 	}
 	fmt.Printf("Weight: %d. Left: %t, Right: %t, Content: '%s'\n", n.Weight, n.Left != nil, n.Right != nil, n.Content)
+}
+
+func (r *Rope) GetContent() string {
+	return r.Head.getContent()
+}
+
+func (n *Node) getContent() string {
+	content := ""
+	if n.Left != nil {
+		content = content + n.Left.getContent()
+	}
+
+	if n.Right != nil {
+		content = content + n.Right.getContent()
+	}
+
+	if n.Right == nil && n.Left == nil {
+		return n.Content
+	}
+	return content
 }
