@@ -44,3 +44,12 @@ func TestRopeConcat(t *testing.T) {
 		}
 	}
 }
+
+func TestRopeSplit(t *testing.T) {
+	testInput := "hello_I_am_a_rope_data_structure"
+	rope := New(testInput)
+	rope.printRope()
+	secondRope := rope.Split(9)
+	rope.printRope()
+	secondRope.printRope()
+}

@@ -115,9 +115,48 @@ func (n *Node) ComputeTotalWeight() int {
 	return weight
 }
 
-// Split a rope into two ropes
-func (*Rope) Split(index int) []Rope {
-	return []Rope{}
+// Split a rope into two
+func (r *Rope) Split(index int) *Rope {
+	removedNodes := Split(r.Head, index)
+	if len(removedNodes) == 0 {
+		return &Rope{}
+	}
+
+	rope := &Rope{Head: &Node{Left: removedNodes[0], Weight: removedNodes[0].ComputeTotalWeight()}}
+	for i := 1; i < len(removedNodes); i++ {
+		if removedNodes[i] != nil {
+			toConcat := &Rope{removedNodes[i]}
+			rope = rope.Concat(toConcat)
+		} else {
+			fmt.Printf("ERROR: Nil node saved...")
+		}
+	}
+	// Recompute weights
+	if r.Head.Left != nil {
+		r.Head.Weight = r.Head.Left.ComputeTotalWeight()
+	}
+	if rope.Head.Left != nil {
+		rope.Head.Weight = rope.Head.Left.ComputeTotalWeight()
+	}
+	return rope
+}
+
+func Split(node *Node, index int) []*Node {
+	if node == nil {
+		return []*Node{}
+	}
+
+	if index > node.Weight && node.Right != nil {
+		return Split(node.Right, index-node.Weight)
+	}
+	if node.Left != nil {
+		n := node.Right
+		node.Right = nil
+		return append(Split(node.Left, index), n)
+	}
+	// We might need to split this node
+	fmt.Printf("Splitting on node: %s\n", node.Content)
+	return []*Node{node}
 }
 
 func (r *Rope) printRope() {
