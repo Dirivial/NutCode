@@ -154,9 +154,24 @@ func Split(node *Node, index int) []*Node {
 		node.Right = nil
 		return append(Split(node.Left, index), n)
 	}
-	// We might need to split this node
-	fmt.Printf("Splitting on node: %s\n", node.Content)
-	return []*Node{node}
+	// Check if the split should occurr somewhere within the content
+	if index > 1 && index < node.Weight {
+		// Create a new node and fill it with content
+		movedContent := node.Content[index:]
+		newNode := &Node{Content: movedContent, Weight: len(movedContent)}
+
+		// Remove the moved content from this node
+		node.Content = node.Content[:index]
+		node.Weight = len(node.Content)
+
+		// Return the newly created node
+		return []*Node{newNode}
+	} else if index == 1 {
+		// Return this node
+		return []*Node{node}
+	}
+	// Return empty node, as the split occurrs after this node
+	return []*Node{}
 }
 
 func (r *Rope) printRope() {
