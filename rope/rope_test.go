@@ -64,3 +64,28 @@ func TestRopeSplit(t *testing.T) {
 		t.Fatalf("Original input does not equal split content. Expected=%s, got=%s", testInput, appendedContent)
 	}
 }
+
+func TestRopeInsert(t *testing.T) {
+	testInput := "hello_I_am_a_rope_data_structure"
+	testInserts := []struct {
+		input    string
+		at       int
+		expected string
+	}{
+		{input: "cool_", at: 14, expected: "hello_I_am_a_cool_rope_data_structure"},
+		{input: "_cool", at: len(testInput), expected: "hello_I_am_a_rope_data_structure_cool"},
+		{input: "_cool_", at: 2, expected: "h_cool_ello_I_am_a_rope_data_structure"},
+		{input: "cool_", at: 1, expected: "cool_hello_I_am_a_rope_data_structure"},
+	}
+	for _, v := range testInserts {
+
+		rope := New(testInput)
+		rope = rope.Insert(v.at, v.input)
+
+		rope.printRope()
+		content := rope.GetContent()
+		if content != v.expected {
+			t.Fatalf("Content mismatch. Expected=%s, got=%s", v.expected, content)
+		}
+	}
+}

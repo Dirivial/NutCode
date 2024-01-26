@@ -36,7 +36,12 @@ func createRope(s string) *Node {
 }
 
 // Insert a string into the rope structure
-func (*Rope) Insert(index int, str string) {
+func (r *Rope) Insert(index int, str string) *Rope {
+	ropeEnd := r.Split(index)
+	ropeMiddle := New(str)
+	fullRope := r.Concat(ropeMiddle)
+	fullRope = fullRope.Concat(ropeEnd)
+	return fullRope
 }
 
 // Delete part of the rope structure
@@ -69,7 +74,7 @@ func (*Rope) CollectLeaves() []Node {
 	return []Node{}
 }
 
-// Build a string from the entire rope structure
+// Build a (sub)string from the entire rope structure
 func (r *Rope) Report(start, length int) string {
 	return ""
 }
@@ -117,11 +122,20 @@ func (n *Node) ComputeTotalWeight() int {
 
 // Split a rope into two
 func (r *Rope) Split(index int) *Rope {
+	// This should just move the entire rope
+	if index == 1 {
+		movedRope := &Rope{Head: r.Head}
+		r.Head = &Node{Weight: 0, Content: ""}
+
+		return movedRope
+	}
+	// Split the rope, resulting in a list of nodes
 	removedNodes := Split(r.Head, index)
 	if len(removedNodes) == 0 {
 		return &Rope{}
 	}
 
+	// Create a new rope with the removed nodes
 	rope := &Rope{Head: &Node{Left: removedNodes[0], Weight: removedNodes[0].ComputeTotalWeight()}}
 	for i := 1; i < len(removedNodes); i++ {
 		if removedNodes[i] != nil {
@@ -157,17 +171,18 @@ func Split(node *Node, index int) []*Node {
 	// Check if the split should occurr somewhere within the content
 	if index > 1 && index < node.Weight {
 		// Create a new node and fill it with content
-		movedContent := node.Content[index:]
+		movedContent := node.Content[index-1:]
 		newNode := &Node{Content: movedContent, Weight: len(movedContent)}
 
 		// Remove the moved content from this node
-		node.Content = node.Content[:index]
+		node.Content = node.Content[:index-1]
 		node.Weight = len(node.Content)
 
 		// Return the newly created node
 		return []*Node{newNode}
 	} else if index == 1 {
 		// Return this node
+		fmt.Println("Am I crazy??")
 		return []*Node{node}
 	}
 	// Return empty node, as the split occurrs after this node
@@ -196,7 +211,11 @@ func (n *Node) printNode(depth int) {
 	for i := 0; i < depth; i++ {
 		fmt.Printf("\t")
 	}
-	fmt.Printf("Weight: %d. Left: %t, Right: %t, Content: '%s'\n", n.Weight, n.Left != nil, n.Right != nil, n.Content)
+	if len(n.Content) != 0 {
+		fmt.Printf("Weight: %d. Content: %s\n", n.Weight, n.Content)
+	} else {
+		fmt.Printf("Weight: %d\n", n.Weight)
+	}
 }
 
 func (r *Rope) GetContent() string {
