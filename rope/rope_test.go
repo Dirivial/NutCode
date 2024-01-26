@@ -41,6 +41,9 @@ func TestRopeConcat(t *testing.T) {
 			t.Fatalf("Wrong character '%s', expected='%c'", res, c)
 		}
 	}
+	if testC != rope.GetContent() {
+		t.Fatalf("Content mismatch. Expected=%s, got=%s", testC, rope.GetContent())
+	}
 }
 
 func TestRopeSplit(t *testing.T) {
