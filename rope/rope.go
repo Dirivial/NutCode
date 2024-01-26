@@ -96,8 +96,23 @@ func Concatenate(node1, node2 *Node) *Node {
 	return &Node{
 		Left:   node1,
 		Right:  node2,
-		Weight: node1.Weight,
+		Weight: node1.ComputeTotalWeight(),
 	}
+}
+
+// Compute the total weight of a node, useful in concat
+func (n *Node) ComputeTotalWeight() int {
+	if n.Left == nil && n.Right == nil {
+		return n.Weight
+	}
+	weight := 0
+	if n.Left != nil {
+		weight += n.Left.ComputeTotalWeight()
+	}
+	if n.Right != nil {
+		weight += n.Right.ComputeTotalWeight()
+	}
+	return weight
 }
 
 // Split a rope into two ropes

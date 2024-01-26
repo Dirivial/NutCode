@@ -29,19 +29,13 @@ func TestRopeIndex(t *testing.T) {
 }
 
 func TestRopeConcat(t *testing.T) {
-	testA := "Hello"
+	testA := "Hello mr"
 	testB := ", world!"
 	testC := testA + testB
 
 	ropeA := New(testA)
 	ropeB := New(testB)
 	rope := ropeA.Concat(ropeB)
-
-	/*rope.printRope()
-	res := rope.Index(9)
-	if res != "o" {
-		t.Fatalf("Wrong character '%s', expected='%c'", res, 'o')
-	}*/
 
 	for i, c := range testC {
 		res := rope.Index(i + 1)
