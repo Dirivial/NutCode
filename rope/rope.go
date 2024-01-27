@@ -119,6 +119,9 @@ func (n *Node) ComputeTotalWeight() int {
 		return n.Weight
 	}
 	weight := 0
+	// TODO: Think if this is really necessary.
+	// Shouldn't I just add n.Weight with n.Right.ComputeTotalWeight()?
+	// (ofc, assuming n.Right != nil)
 	if n.Left != nil {
 		weight += n.Left.ComputeTotalWeight()
 	}
