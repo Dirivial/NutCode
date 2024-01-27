@@ -45,7 +45,15 @@ func (r *Rope) Insert(index int, str string) *Rope {
 }
 
 // Delete part of the rope structure
-func (*Rope) Delete(start, length int) {
+func (r *Rope) Delete(start, length int) *Rope {
+	// Ignore unusable calls
+	if length <= 0 || start < 0 {
+		return r
+	}
+	intermediate := r.Split(start)
+	right := intermediate.Split(length)
+	ret := r.Concat(right)
+	return ret
 }
 
 // Get character at a position.
@@ -123,7 +131,7 @@ func (n *Node) ComputeTotalWeight() int {
 // Split a rope into two
 func (r *Rope) Split(index int) *Rope {
 	// This should just move the entire rope
-	if index == 1 {
+	if index == 0 {
 		movedRope := &Rope{Head: r.Head}
 		r.Head = &Node{Weight: 0, Content: ""}
 
@@ -134,7 +142,10 @@ func (r *Rope) Split(index int) *Rope {
 	if len(removedNodes) == 0 {
 		return &Rope{}
 	}
-
+	/*
+		  for _, n := range removedNodes {
+				fmt.Printf("Removed node: %d-%t-%t-%s\n", n.Weight, n.Left != nil, n.Right != nil, n.Content)
+			}*/
 	// Create a new rope with the removed nodes
 	rope := &Rope{Head: &Node{Left: removedNodes[0], Weight: removedNodes[0].ComputeTotalWeight()}}
 	for i := 1; i < len(removedNodes); i++ {
@@ -142,7 +153,7 @@ func (r *Rope) Split(index int) *Rope {
 			toConcat := &Rope{removedNodes[i]}
 			rope = rope.Concat(toConcat)
 		} else {
-			fmt.Printf("ERROR: Nil node saved...")
+			fmt.Println("ERROR: Nil node saved...")
 		}
 	}
 	// Recompute weights
@@ -157,52 +168,52 @@ func (r *Rope) Split(index int) *Rope {
 
 func Split(node *Node, index int) []*Node {
 	if node == nil {
+		fmt.Println("Is this also a problem?")
 		return []*Node{}
 	}
 
 	if index > node.Weight && node.Right != nil {
 		return Split(node.Right, index-node.Weight)
 	}
+
 	if node.Left != nil {
 		n := node.Right
 		node.Right = nil
 		return append(Split(node.Left, index), n)
 	}
 	// Check if the split should occurr somewhere within the content
-	if index > 1 && index < node.Weight {
+	if index >= 1 && index < node.Weight {
 		// Create a new node and fill it with content
-		movedContent := node.Content[index-1:]
+		movedContent := node.Content[index:]
 		newNode := &Node{Content: movedContent, Weight: len(movedContent)}
 
 		// Remove the moved content from this node
-		node.Content = node.Content[:index-1]
+		node.Content = node.Content[:index]
 		node.Weight = len(node.Content)
 
 		// Return the newly created node
 		return []*Node{newNode}
-	} else if index == 1 {
+	} else if index == 0 {
 		// Return this node
-		fmt.Println("Am I crazy??")
 		return []*Node{node}
 	}
+	fmt.Println("Bruhmode")
 	// Return empty node, as the split occurrs after this node
-	return []*Node{}
+	return []*Node{{Content: "", Weight: 0}}
 }
 
 func (r *Rope) printRope() {
 	n := r.Head
-	n.printNode(0)
 	n.printChildren(1)
 }
 
 func (n *Node) printChildren(depth int) {
 	if n.Left != nil {
-		n.Left.printNode(depth)
 		n.Left.printChildren(depth + 1)
 	}
 
+	n.printNode(depth)
 	if n.Right != nil {
-		n.Right.printNode(depth)
 		n.Right.printChildren(depth + 1)
 	}
 }

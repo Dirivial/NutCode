@@ -59,7 +59,11 @@ func TestRopeSplit(t *testing.T) {
 		t.Fatalf("Weights of split tree does not add up to original number. Expected=%d, got=%d+%d(=%d)", ropeHeadWeight, rope.Head.Weight, secondRope.Head.Weight, weightSum)
 	}
 
+	// rope.printRope()
+	// println("================================================================================================")
+	// secondRope.printRope()
 	appendedContent := rope.GetContent() + secondRope.GetContent()
+
 	if appendedContent != testInput {
 		t.Fatalf("Original input does not equal split content. Expected=%s, got=%s", testInput, appendedContent)
 	}
@@ -72,17 +76,43 @@ func TestRopeInsert(t *testing.T) {
 		at       int
 		expected string
 	}{
-		{input: "cool_", at: 14, expected: "hello_I_am_a_cool_rope_data_structure"},
+		{input: "cool_", at: 13, expected: "hello_I_am_a_cool_rope_data_structure"},
 		{input: "_cool", at: len(testInput), expected: "hello_I_am_a_rope_data_structure_cool"},
-		{input: "_cool_", at: 2, expected: "h_cool_ello_I_am_a_rope_data_structure"},
-		{input: "cool_", at: 1, expected: "cool_hello_I_am_a_rope_data_structure"},
+		{input: "_cool_", at: 1, expected: "h_cool_ello_I_am_a_rope_data_structure"},
+		{input: "cool_", at: 0, expected: "cool_hello_I_am_a_rope_data_structure"},
 	}
 	for _, v := range testInserts {
 
 		rope := New(testInput)
 		rope = rope.Insert(v.at, v.input)
 
-		rope.printRope()
+		// rope.printRope()
+		content := rope.GetContent()
+		if content != v.expected {
+			t.Fatalf("Content mismatch. Expected=%s, got=%s", v.expected, content)
+		}
+	}
+}
+
+func TestRopeDelete(t *testing.T) {
+	testInput := "hello_I_am_a_rope_data_structure"
+	testRemoves := []struct {
+		start    int
+		length   int
+		expected string
+	}{
+		{14, 1, "hello_I_am_a_rpe_data_structure"},
+		{13, 5, "hello_I_am_a_data_structure"},
+		{len(testInput) - 1, 1, "hello_I_am_a_rope_data_structur"},
+		{1, 2, "hlo_I_am_a_rope_data_structure"},
+		{0, 1, "ello_I_am_a_rope_data_structure"},
+	}
+	for _, v := range testRemoves {
+
+		rope := New(testInput)
+		rope = rope.Delete(v.start, v.length)
+
+		// rope.printRope()
 		content := rope.GetContent()
 		if content != v.expected {
 			t.Fatalf("Content mismatch. Expected=%s, got=%s", v.expected, content)
