@@ -142,10 +142,7 @@ func (r *Rope) Split(index int) *Rope {
 	if len(removedNodes) == 0 {
 		return &Rope{}
 	}
-	/*
-		  for _, n := range removedNodes {
-				fmt.Printf("Removed node: %d-%t-%t-%s\n", n.Weight, n.Left != nil, n.Right != nil, n.Content)
-			}*/
+
 	// Create a new rope with the removed nodes
 	rope := &Rope{Head: &Node{Left: removedNodes[0], Weight: removedNodes[0].ComputeTotalWeight()}}
 	for i := 1; i < len(removedNodes); i++ {
