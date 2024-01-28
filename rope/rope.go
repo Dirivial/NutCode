@@ -40,9 +40,13 @@ func createRope(s string) *Node {
 // Insert a string into the rope structure
 func (r *Rope) Insert(index int, str string) *Rope {
 	ropeEnd := r.Split(index)
+	ropeEnd.Rebalance()
 	ropeMiddle := New(str)
+	ropeMiddle.Rebalance()
 	fullRope := r.Concat(ropeMiddle)
+	fullRope.Rebalance()
 	fullRope = fullRope.Concat(ropeEnd)
+	fullRope.Rebalance()
 	return fullRope
 }
 
@@ -53,8 +57,11 @@ func (r *Rope) Delete(start, length int) *Rope {
 		return r
 	}
 	intermediate := r.Split(start)
+	intermediate.Rebalance()
 	right := intermediate.Split(length)
+	right.Rebalance()
 	ret := r.Concat(right)
+	ret.Rebalance()
 	return ret
 }
 
@@ -115,8 +122,32 @@ func Report(n *Node, start, end int) string {
 }
 
 // Rebalance the rope structure
-func (*Rope) Rebalance() Rope {
-	return Rope{}
+func (r *Rope) Rebalance() *Rope {
+	// I will begin by just reducing the amount of "linked lists" that appear
+	r.Head.Left.Rebalance(r.Head)
+	r.Head.Right.Rebalance(r.Head)
+	return r
+}
+
+func (n *Node) Rebalance(parent *Node) {
+	if n == nil {
+		return
+	}
+	if n.Left == nil && n.Right != nil {
+		if parent.Left == n {
+			parent.Left = n.Right
+		} else {
+			parent.Right = n.Right
+		}
+		n.Right.Rebalance(parent)
+	} else if n.Left != nil && n.Right == nil {
+		if parent.Left == n {
+			parent.Left = n.Left
+		} else {
+			parent.Right = n.Left
+		}
+		n.Left.Rebalance(parent)
+	}
 }
 
 // Concatenate a rope with another

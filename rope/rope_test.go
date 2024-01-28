@@ -59,9 +59,6 @@ func TestRopeSplit(t *testing.T) {
 		t.Fatalf("Weights of split tree does not add up to original number. Expected=%d, got=%d+%d(=%d)", ropeHeadWeight, rope.Head.Weight, secondRope.Head.Weight, weightSum)
 	}
 
-	// rope.printRope()
-	// println("================================================================================================")
-	// secondRope.printRope()
 	appendedContent := rope.GetContent() + secondRope.GetContent()
 
 	if appendedContent != testInput {
@@ -115,6 +112,7 @@ func TestRopeDelete(t *testing.T) {
 		// rope.printRope()
 		content := rope.GetContent()
 		if content != v.expected {
+			rope.printRope()
 			t.Fatalf("Content mismatch. Expected=%s, got=%s", v.expected, content)
 		}
 	}
