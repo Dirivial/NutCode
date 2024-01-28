@@ -119,3 +119,29 @@ func TestRopeDelete(t *testing.T) {
 		}
 	}
 }
+
+func TestRopeReport(t *testing.T) {
+	testInput := "hello_I_am_a_rope_data_structure"
+	testReports := []struct {
+		start    int
+		length   int
+		expected string
+	}{
+		{14, 1, "r"},
+		{13, 5, "_rope"},
+		{len(testInput), 1, "e"},
+		{1, 2, "he"},
+		{1, 1, "h"},
+		//{len(testInput), 1, ""},
+	}
+	for _, v := range testReports {
+
+		rope := New(testInput)
+		content := rope.Report(v.start, v.length)
+
+		if content != v.expected {
+			rope.printRope()
+			t.Fatalf("Content mismatch. Expected=%s, got=%s", v.expected, content)
+		}
+	}
+}

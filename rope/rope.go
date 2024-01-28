@@ -1,6 +1,8 @@
 package rope
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Rope struct {
 	Head *Node
@@ -78,13 +80,38 @@ func Index(node *Node, index int) string {
 }
 
 // Collect all leaves of the rope structure
-func (*Rope) CollectLeaves() []Node {
+func (r *Rope) CollectLeaves() []Node {
 	return []Node{}
 }
 
 // Build a (sub)string from the entire rope structure
 func (r *Rope) Report(start, length int) string {
-	return ""
+	content := Report(r.Head, start, start+length)
+	return content
+}
+
+func Report(n *Node, start, end int) string {
+	if n == nil {
+		return ""
+	}
+
+	content := ""
+	if (start > n.Weight || end > n.Weight) && n.Right != nil {
+		content += Report(n.Right, max(start-n.Weight, 1), end-n.Weight)
+	}
+	if start < n.Weight && n.Left != nil {
+		content = Report(n.Left, start, end) + content
+	}
+
+	if n.Left == nil && n.Right == nil {
+		if n.Weight < start {
+			return ""
+		} else if n.Weight >= end {
+			return n.Content[start-1 : end-1]
+		}
+		return n.Content[start-1:]
+	}
+	return content
 }
 
 // Rebalance the rope structure
