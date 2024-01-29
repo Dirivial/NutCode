@@ -42,7 +42,6 @@ func (r *Rope) Insert(index int, str string) *Rope {
 	ropeEnd := r.Split(index)
 	ropeEnd.Rebalance()
 	ropeMiddle := New(str)
-	ropeMiddle.Rebalance()
 	fullRope := r.Concat(ropeMiddle)
 	fullRope.Rebalance()
 	fullRope = fullRope.Concat(ropeEnd)
@@ -288,17 +287,17 @@ func (n *Node) printNode(depth int) {
 }
 
 func (r *Rope) GetContent() string {
-	return r.Head.getContent()
+	return r.Head.GetContent()
 }
 
-func (n *Node) getContent() string {
+func (n *Node) GetContent() string {
 	content := ""
 	if n.Left != nil {
-		content = content + n.Left.getContent()
+		content = content + n.Left.GetContent()
 	}
 
 	if n.Right != nil {
-		content = content + n.Right.getContent()
+		content = content + n.Right.GetContent()
 	}
 
 	if n.Right == nil && n.Left == nil {
