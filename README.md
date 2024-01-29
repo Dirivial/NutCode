@@ -7,7 +7,7 @@ A text editor written in Go :)
 In short, the goal is to write a text editor which can read/write to text files.
 I very much doubt that I will add syntax highlighting.
 
-- [ ] Rope data structure
+- [x] Rope data structure (might need to work on this a bit more)
 - [ ] Reading text files
 - [ ] Writing to text files
 - [ ] Displaying line numbers
@@ -25,4 +25,5 @@ I very much doubt that I will add syntax highlighting.
 
 ## Dependencies
 
-I'm using [tcell (note: v2)](https://github.com/gdamore/tcell) to manage writing to/from the terminal.
+I'm using [tcell (note: v2)](https://github.com/gdamore/tcell) to manage
+writing to/from the terminal.
