@@ -2,6 +2,7 @@ package rope
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Rope struct {
@@ -81,6 +82,9 @@ func Index(node *Node, index int) string {
 	}
 	if node.Left != nil {
 		return Index(node.Left, index)
+	}
+	if index > node.Weight {
+		return ""
 	}
 	return string(node.Content[index-1])
 }
@@ -210,7 +214,7 @@ func (r *Rope) Split(index int) *Rope {
 			toConcat := &Rope{removedNodes[i]}
 			rope = rope.Concat(toConcat)
 		} else {
-			fmt.Println("ERROR: Nil node saved...")
+			// fmt.Println("ERROR: Nil node saved...")
 		}
 	}
 	// Recompute weights
@@ -225,7 +229,7 @@ func (r *Rope) Split(index int) *Rope {
 
 func Split(node *Node, index int) []*Node {
 	if node == nil {
-		fmt.Println("Is this also a problem?")
+		// fmt.Println("Is this also a problem?")
 		return []*Node{}
 	}
 
@@ -254,7 +258,7 @@ func Split(node *Node, index int) []*Node {
 		// Return this node
 		return []*Node{node}
 	}
-	fmt.Println("Bruhmode")
+	// fmt.Println("Bruhmode")
 	// Return empty node, as the split occurrs after this node
 	return []*Node{{Content: "", Weight: 0}}
 }
@@ -304,4 +308,47 @@ func (n *Node) GetContent() string {
 		return n.Content
 	}
 	return content
+}
+
+func (r *Rope) SearchChar(char rune, startFrom int) int {
+	if startFrom < 0 {
+		return -1
+	}
+
+	return r.Head.SearchChar(char, startFrom, 1)
+}
+
+func (n *Node) SearchChar(char rune, index, globalIndex int) int {
+	if n == nil {
+		// fmt.Println("Cringe")
+		return -1
+	}
+
+	if index > n.Weight && n.Right != nil {
+		ret := n.Right.SearchChar(char, index-n.Weight, 0)
+		if ret == -1 {
+			return -1
+		}
+		return ret + n.Weight
+	}
+	if n.Left != nil {
+		ret := n.Left.SearchChar(char, index, globalIndex)
+		// If we could not find it to the left, check right path
+		if ret == -1 {
+			ret = n.Right.SearchChar(char, 1, n.Weight)
+			if ret == -1 {
+				return -1
+			}
+			return ret + n.Weight
+		}
+		return ret
+	}
+	if index >= n.Weight {
+		return -1
+	}
+	c := strings.IndexRune(n.Content[index-1:], char)
+	if c == -1 {
+		return -1
+	}
+	return c + index
 }

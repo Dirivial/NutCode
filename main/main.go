@@ -1,6 +1,7 @@
 package main
 
 import (
+	"NutCode/rope"
 	"fmt"
 	"log"
 
@@ -21,14 +22,14 @@ func drawLineNumbers(s tcell.Screen, offset int) {
 	}
 }
 
-func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content []rune) {
+func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content string) {
 	row := 0
 	col := offset
 	for _, r := range content {
 		if r == '\n' {
 			row++
 			col = offset
-			s.SetContent(col, row, 'A', nil, style)
+			s.SetContent(col, row, r, nil, style)
 		} else {
 			s.SetContent(col, row, r, nil, style)
 			col++
@@ -38,9 +39,11 @@ func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content 
 
 func main() {
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-	testContent := []rune("This is some text content.\nI wonder how this will be displayed\n\nBruhmode\tengaged.\n")
-	content := make([]rune, 2048)
-	copy(content, testContent)
+
+	// TODO: Remove and implement reading of files
+	testContent := string("This is some text content.\nI wonder how this will be displayed\n\nBruhmode\tengaged.\n\n\n\nBrusch")
+	content := rope.New(testContent)
+	charCount := len(testContent)
 
 	// Initialize screen
 	s, err := tcell.NewScreen()
@@ -71,10 +74,10 @@ func main() {
 	lineNumRoom := 5
 	contentStart := lineNumRoom + 2
 	drawLineNumbers(s, lineNumRoom)
-	drawContent(s, 0, 0, contentStart, defStyle, content)
+	drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
 
 	// Event loop
-	x, y, c := 0, 0, 0
+	x, y, c := 0, 0, 1
 	s.ShowCursor(contentStart, y)
 	for {
 		// Update screen
@@ -92,24 +95,58 @@ func main() {
 				return
 			} else if ev.Key() == tcell.KeyCtrlL {
 				s.Sync()
+			} else if ev.Key() == tcell.KeyRight {
+				c++
+				x++
+			} else if ev.Key() == tcell.KeyLeft {
+				if x > 0 {
+					c--
+					x--
+				}
 			} else if ev.Key() == tcell.KeyDown {
-				y++
 				// Move cursor depending on line length
+
+				temp := c
+
+				minMove := content.SearchChar('\n', c)
+				if minMove != -1 {
+
+					nextLineEnd := content.SearchChar('\n', minMove+1)
+					if nextLineEnd != -1 {
+
+						if nextLineEnd-minMove < x {
+							if nextLineEnd-minMove <= 1 {
+								x = 0
+								c = minMove
+							} else {
+								x = nextLineEnd - minMove
+								c = nextLineEnd
+							}
+						} else {
+							c = minMove + x
+						}
+						if c != temp+1 {
+							y++
+						}
+					}
+				}
 			} else if ev.Key() == tcell.KeyUp {
 				y--
 				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
-				content[c] = '\n'
+				content = content.Insert(c, string('\n'))
+				charCount++
 				s.Clear()
-				drawContent(s, 0, 0, contentStart, defStyle, content)
+				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
 				drawLineNumbers(s, lineNumRoom)
 				x = 0
 				y++
 				c++
 			} else {
-				content[c] = ev.Rune()
+				content = content.Insert(c, string(ev.Rune()))
+				charCount++
 				s.Clear()
-				drawContent(s, 0, 0, contentStart, defStyle, content)
+				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
 				drawLineNumbers(s, lineNumRoom)
 				// s.SetContent(contentStart+x, y, ev.Rune(), nil, defStyle)
 				x++
