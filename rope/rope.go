@@ -124,6 +124,13 @@ func Report(n *Node, start, end int) string {
 	return content
 }
 
+func max(i1, i2 int) int {
+	if i1 > i2 {
+		return i1
+	}
+	return i2
+}
+
 // Rebalance the rope structure
 func (r *Rope) Rebalance() *Rope {
 	// I will begin by just reducing the amount of "linked lists" that appear
