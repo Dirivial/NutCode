@@ -1,6 +1,6 @@
 module NutCode/main
 
-go 1.21.5
+go 1.23
 
 require (
 	github.com/gdamore/encoding v1.0.0 // indirect
