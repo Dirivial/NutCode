@@ -144,31 +144,36 @@ func TestRopeReport(t *testing.T) {
 }
 
 func TestRopeSearch(t *testing.T) {
-	testInput := "Ahello_I_am_Aa_rope_AdaAAta_structureA"
+	testInput := "Ahello_I_am_Aa_rope_AdaAAta_structurezA"
 	testSearch := []struct {
-		start    int
-		expected int
+		start     int
+		expected  int
+		character rune
 	}{
-		{1, 1},
-		{2, 13},
-		{8, 13},
-		{13, 13},
-		{14, 21},
-		{22, 24},
-		{24, 24},
-		{25, 25},
-		{26, 38},
-		{len(testInput) + 1, -1},
-		{-1, -1},
+		{1, 1, 'A'},
+		{2, 10, 'a'},
+		{2, 13, 'A'},
+		{11, 14, 'a'},
+		{8, 13, 'A'},
+		{13, 13, 'A'},
+		{14, 21, 'A'},
+		{22, 24, 'A'},
+		{24, 24, 'A'},
+		{25, 25, 'A'},
+		{26, 39, 'A'},
+		{len(testInput) + 1, -1, 'A'},
+		{-1, -1, 'A'},
 	}
 	for _, v := range testSearch {
 
+		//fmt.Printf("\n ================ %c -- %d ================ \n", v.character, v.start)
 		rope := New(testInput)
-		content := rope.SearchChar('A', v.start)
+		content := rope.SearchChar(v.character, v.start)
 
 		if content != v.expected {
 			rope.printRope()
-			t.Fatalf("Result mismatch. Expected=%d, got=%d, start=%d", v.expected, content, v.start)
+			t.Fatalf("Result mismatch. Expected=%d, got=%d, start=%d, char=%c", v.expected, content, v.start, v.character)
 		}
+		//fmt.Println("")
 	}
 }
