@@ -25,8 +25,8 @@ I very much doubt that I will add syntax highlighting.
   - [x] Newline
   - [x] Tab
 
-- [ ] Reading text files
-- [ ] Writing to text files
+- [x] Reading text files
+- [x] Writing to text files
 - [ ] Scrolling on large text content
 
 - [ ] Displaying line numbers

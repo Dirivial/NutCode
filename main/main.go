@@ -18,11 +18,11 @@ const (
 )
 
 // Completely redraw the screen
-func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content, fileName string, isSaved bool, mode int) {
+func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content, fileName string, unsavedChanges bool, mode int) {
 	s.Clear()
 	drawContent(s, offset, style, content)
 	drawLineNumbers(s, lineNumberRoom)
-	drawStatus(s, mode, cy, cx, fileName, isSaved)
+	drawStatus(s, mode, cy, cx, fileName, unsavedChanges)
 }
 
 // Draw line numbers
@@ -57,14 +57,14 @@ func drawContent(s tcell.Screen, offset int, style tcell.Style, content string) 
 }
 
 // Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
-func drawStatus(s tcell.Screen, mode, lineNr, colNr int, filename string, isSaved bool) {
+func drawStatus(s tcell.Screen, mode, lineNr, colNr int, filename string, unsavedChanges bool) {
 	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
 	w, h := s.Size()
 
 	// Draw information
 	curEnd := drawMode(s, mode, h, style)
 	curEnd = drawCursorPositionStatus(s, lineNr, colNr, curEnd, h, style)
-	curEnd = drawFileStatus(s, filename, isSaved, curEnd, h, style)
+	curEnd = drawFileStatus(s, filename, unsavedChanges, curEnd, h, style)
 
 	// Fill the rest of the row
 	for i := curEnd; i < w; i++ {
@@ -73,9 +73,9 @@ func drawStatus(s tcell.Screen, mode, lineNr, colNr int, filename string, isSave
 }
 
 // Draw file name & if the changes the user has made are saved
-func drawFileStatus(s tcell.Screen, fileName string, isSaved bool, startAt, height int, style tcell.Style) int {
+func drawFileStatus(s tcell.Screen, fileName string, unsavedChanges bool, startAt, height int, style tcell.Style) int {
 	info := ""
-	if !isSaved {
+	if unsavedChanges {
 		info = "*"
 	}
 	info += fileName
@@ -187,7 +187,8 @@ func main() {
 	tabSize := 4
 	lineNumRoom := 5
 	contentStart := lineNumRoom + 2
-	drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent(), "myfile", false, NORMAL)
+	unsavedChanges := false
+	drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent(), "myfile", unsavedChanges, NORMAL)
 
 	// Event loop
 	x, y, c := 0, 0, 0
@@ -208,6 +209,15 @@ func main() {
 				return
 			} else if ev.Key() == tcell.KeyCtrlL {
 				s.Sync()
+			} else if ev.Key() == tcell.KeyCtrlS {
+				// Save into file
+				err := os.WriteFile(*filename, []byte(content.GetContent()), 0644)
+				if err != nil {
+					fmt.Println("Error writing to file: ", err)
+					return
+				}
+				unsavedChanges = false
+
 			} else if ev.Key() == tcell.KeyRight {
 				nextRune := content.Index(c + 1)
 				if nextRune != "\n" && nextRune != "" {
@@ -288,6 +298,7 @@ func main() {
 					content = content.Delete(c-1, 1)
 					charCount--
 					c--
+					unsavedChanges = true
 					// Move cursor
 					if x > 0 {
 						x--
@@ -305,8 +316,6 @@ func main() {
 							x = diff
 						}
 					}
-					// === Draw ===
-					//		drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 				}
 				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
@@ -316,18 +325,16 @@ func main() {
 				x = 0
 				y++
 				c++
+				unsavedChanges = true
 
-				// === Draw ===
-				//	drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 			} else if ev.Key() == tcell.KeyTab || ev.Key() == tcell.KeyTAB {
 				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
 				charCount += tabSize
 				x += tabSize
 				c += tabSize
+				unsavedChanges = true
 
-				// === Draw ===
-				//	drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 			} else {
 				// Catch-all for remaining characters,
 				// adding them to the content at the current cursor position
@@ -338,7 +345,7 @@ func main() {
 			}
 
 			// === Draw ===
-			drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent(), "myfile", false, NORMAL)
+			drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent(), *filename, unsavedChanges, NORMAL)
 			s.ShowCursor(x+contentStart, y)
 		}
 	}
