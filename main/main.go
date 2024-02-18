@@ -9,6 +9,13 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+// Completely redraw the screen
+func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content string) {
+	s.Clear()
+	drawContent(s, cx, cy, offset, style, content)
+	drawLineNumbers(s, lineNumberRoom)
+}
+
 func drawLineNumbers(s tcell.Screen, offset int) {
 	_, height := s.Size()
 	style := tcell.StyleDefault
@@ -159,36 +166,40 @@ func main() {
 						// TODO: After implementing reverse search, put x at the end of the line
 					}
 					charCount--
-					s.Clear()
-					drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
-					drawLineNumbers(s, lineNumRoom)
+
+					// === Draw ===
+					drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 				}
 				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
+				// Insert a newline and move to the next line
 				content = content.Insert(c, string('\n'))
 				charCount++
-				s.Clear()
-				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
-				drawLineNumbers(s, lineNumRoom)
 				x = 0
 				y++
 				c++
+
+				// === Draw ===
+				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 			} else if ev.Key() == tcell.KeyTab || ev.Key() == tcell.KeyTAB {
+				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
 				charCount += tabSize
-				s.Clear()
-				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
-				drawLineNumbers(s, lineNumRoom)
 				x += tabSize
 				c += tabSize
+
+				// === Draw ===
+				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 			} else {
+				// Catch-all for remaining characters,
+				// adding them to the content at the current cursor position
 				content = content.Insert(c, string(ev.Rune()))
 				charCount++
-				s.Clear()
-				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
-				drawLineNumbers(s, lineNumRoom)
 				x++
 				c++
+
+				// === Draw ===
+				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 			}
 
 			s.ShowCursor(x+contentStart, y)
