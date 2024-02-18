@@ -187,7 +187,6 @@ func main() {
 				s.Clear()
 				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
 				drawLineNumbers(s, lineNumRoom)
-				// s.SetContent(contentStart+x, y, ev.Rune(), nil, defStyle)
 				x++
 				c++
 			}
