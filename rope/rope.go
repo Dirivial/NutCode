@@ -350,7 +350,8 @@ func (n *Node) SearchChar(char rune, index, globalIndex int) int {
 		}
 		return ret
 	}
-	if index >= n.Weight {
+	// Stop if we want something after this node
+	if index > n.Weight {
 		return -1
 	}
 	c := strings.IndexRune(n.Content[index-1:], char)
