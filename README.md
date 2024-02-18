@@ -27,6 +27,7 @@ I very much doubt that I will add syntax highlighting.
 
 - [ ] Reading text files
 - [ ] Writing to text files
+- [ ] Scrolling on large text content
 
 - [ ] Displaying line numbers
 
