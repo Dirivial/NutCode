@@ -41,7 +41,7 @@ func main() {
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
 
 	// TODO: Remove and implement reading of files
-	testContent := string("This is some text content. I wonder how this will be displayed.\nBruhmode.engaged\n,,\n,\nBrusch")
+	testContent := string("This is some text content. I wonder how this will be displayed.\nBruhmode.engaged\n,,\n\n,\nBrusch")
 	content := rope.New(testContent)
 	charCount := len(testContent)
 
@@ -132,7 +132,32 @@ func main() {
 					}
 				}
 			} else if ev.Key() == tcell.KeyUp {
-				y--
+				if y > 0 {
+					y--
+					// TODO: After reverse search. Move c and x
+				} else {
+					// Move to the beginning of the file
+					x = 0
+					c = 0
+				}
+			} else if ev.Key() == tcell.KeyBackspace || ev.Key() == tcell.KeyBS || ev.Key() == tcell.KeyBackspace2 {
+				// Make sure there is something to delete
+				if c > 0 {
+					content = content.Delete(c-1, 1)
+					c--
+					// Move cursor
+					if x > 0 {
+						x--
+					} else {
+						// Move up
+						y--
+						// TODO: After implementing reverse search, put x at the end of the line
+					}
+					charCount--
+					s.Clear()
+					drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
+					drawLineNumbers(s, lineNumRoom)
+				}
 				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
 				content = content.Insert(c, string('\n'))
