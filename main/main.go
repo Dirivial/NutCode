@@ -41,7 +41,7 @@ func main() {
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
 
 	// TODO: Remove and implement reading of files
-	testContent := string("This is some text content.\nI wonder how this will be displayed\n\nBruhmode\tengaged.\n\n\n\nBrusch")
+	testContent := string("This is some text content. I wonder how this will be displayed.\nBruhmode.engaged\n,,\n,\nBrusch")
 	content := rope.New(testContent)
 	charCount := len(testContent)
 
@@ -77,7 +77,7 @@ func main() {
 	drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
 
 	// Event loop
-	x, y, c := 0, 0, 1
+	x, y, c := 0, 0, 0
 	s.ShowCursor(contentStart, y)
 	for {
 		// Update screen
@@ -106,28 +106,29 @@ func main() {
 			} else if ev.Key() == tcell.KeyDown {
 				// Move cursor depending on line length
 
-				temp := c
-
-				minMove := content.SearchChar('\n', c)
+				minMove := content.SearchChar('\n', c+1)
 				if minMove != -1 {
+					// Note: this moves us after the newline
+					c = minMove
+					//x = 0
+					y++
+					// Check if we can move the pointer foward to the old x position
+					lineEnd := content.SearchChar('\n', c+1)
+					if lineEnd != -1 {
+						// Compute length of the line we move to
+						diff := lineEnd - minMove
 
-					nextLineEnd := content.SearchChar('\n', minMove+1)
-					if nextLineEnd != -1 {
-
-						if nextLineEnd-minMove < x {
-							if nextLineEnd-minMove <= 1 {
-								x = 0
-								c = minMove
-							} else {
-								x = nextLineEnd - minMove
-								c = nextLineEnd
+						if diff > 0 {
+							if diff <= x {
+								// Move x to the end of the line (-1 for the newline)
+								x = diff - 1
 							}
+							c += x
 						} else {
-							c = minMove + x
+							x = 0
 						}
-						if c != temp+1 {
-							y++
-						}
+					} else {
+						x = 0
 					}
 				}
 			} else if ev.Key() == tcell.KeyUp {
