@@ -1,6 +1,7 @@
 package rope
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -359,4 +360,61 @@ func (n *Node) SearchChar(char rune, index, globalIndex int) int {
 		return -1
 	}
 	return c + index
+}
+
+func (r *Rope) SearchCharReverse(char rune, startFrom int) (int, error) {
+	fmt.Println("\n ==== Reverse search ====")
+	if startFrom < 1 {
+		return -1, errors.New("Index less than 1.")
+	}
+
+	return r.Head.SearchCharReverse(char, startFrom, 1)
+}
+
+func (n *Node) SearchCharReverse(char rune, index, globalIndex int) (int, error) {
+	if n == nil {
+		return -1, errors.New("Nil node")
+	}
+
+	if index > n.Weight && n.Right != nil {
+		ret, err := n.Right.SearchCharReverse(char, index-n.Weight, 0)
+		if err != nil {
+			return ret, err
+		}
+		// If we could not find it to the right, check left path
+		if ret == -1 {
+			ret, err = n.Left.SearchCharReverse(char, n.Weight, 0)
+			if err != nil {
+				return ret, err
+			}
+			if ret == -1 {
+				return -1, nil
+			}
+			return ret, nil
+		}
+		return ret + n.Weight, nil
+	}
+
+	if n.Left != nil {
+		ret, err := n.Left.SearchCharReverse(char, index, globalIndex)
+		if err != nil {
+			return ret, err
+		}
+		if ret == -1 {
+			return -1, nil
+		}
+		return ret, nil
+	}
+	if index > n.Weight {
+		return -1, errors.New("Index out of bounds.")
+	}
+	runes := []rune(n.Content)
+	c := -2
+	for i := index - 1; i >= 0; i-- {
+		if runes[i] == char {
+			c = i
+			break
+		}
+	}
+	return c + 1, nil
 }

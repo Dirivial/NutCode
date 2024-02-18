@@ -1,6 +1,7 @@
 package rope
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -174,6 +175,48 @@ func TestRopeSearch(t *testing.T) {
 			rope.printRope()
 			t.Fatalf("Result mismatch. Expected=%d, got=%d, start=%d, char=%c", v.expected, content, v.start, v.character)
 		}
+		//fmt.Println("")
+	}
+}
+func TestRopeSearchReverse(t *testing.T) {
+	testInput := "Ahello_I_am_Aa_rope_AdaAAta_structurezA"
+	testSearch := []struct {
+		start       int
+		expected    int
+		expectedErr error
+		character   rune
+	}{
+		{1, 1, nil, 'A'},
+		{2, 1, nil, 'A'},
+		{12, 1, nil, 'A'},
+		{13, 13, nil, 'A'},
+		{14, 13, nil, 'A'},
+		{13, 13, nil, 'A'},
+		{14, 13, nil, 'A'},
+		{22, 21, nil, 'A'},
+		{23, 21, nil, 'A'},
+		{24, 24, nil, 'A'},
+		{25, 25, nil, 'A'},
+		{26, 25, nil, 'A'},
+		{38, 25, nil, 'A'},
+		{39, 39, nil, 'A'},
+		{len(testInput) + 1, -1, errors.New("Index out of bounds."), 'A'},
+		{-1, -1, errors.New("Index less than 1."), 'A'},
+	}
+	for _, v := range testSearch {
+
+		rope := New(testInput)
+		content, err := rope.SearchCharReverse(v.character, v.start)
+		if err != nil && v.expectedErr != nil && v.expectedErr.Error() != err.Error() {
+			if v.expectedErr.Error() != err.Error() {
+				t.Fatalf("Error: %s, expected %s", err.Error(), v.expectedErr.Error())
+			}
+		}
+		if content != v.expected {
+			rope.printRope()
+			t.Fatalf("Result mismatch. Expected=%d, got=%d, start=%d, char=%c", v.expected, content, v.start, v.character)
+		}
+
 		//fmt.Println("")
 	}
 }
