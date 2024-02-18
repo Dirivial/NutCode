@@ -16,6 +16,7 @@ func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.St
 	drawLineNumbers(s, lineNumberRoom)
 }
 
+// Draw line numbers
 func drawLineNumbers(s tcell.Screen, offset int) {
 	_, height := s.Size()
 	style := tcell.StyleDefault
@@ -30,6 +31,7 @@ func drawLineNumbers(s tcell.Screen, offset int) {
 	}
 }
 
+// Draw the content to the screen
 func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content string) {
 	row := 0
 	col := offset
@@ -145,8 +147,34 @@ func main() {
 				}
 			} else if ev.Key() == tcell.KeyUp {
 				if y > 0 {
-					y--
-					// TODO: After reverse search. Move c and x
+					// Find end of last row
+					lineEnd, err := content.SearchCharReverse('\n', c)
+					if lineEnd != -1 && err == nil {
+						// Move up
+						y--
+						// Find start of last row
+						lineStart, err := content.SearchCharReverse('\n', lineEnd-1)
+						if err == nil {
+							if lineStart == -1 {
+								lineStart = 1
+							}
+							c = lineStart
+							// Compute length of the line we move to
+							diff := lineEnd - lineStart
+
+							if diff > 0 {
+								if diff <= x {
+									// Move x to the end of the line (-1 for the newline)
+									x = diff - 1
+								}
+								c += x
+							} else {
+								x = 0
+							}
+						} else {
+							x = 0
+						}
+					}
 				} else {
 					// Move to the beginning of the file
 					x = 0
@@ -156,17 +184,25 @@ func main() {
 				// Make sure there is something to delete
 				if c > 0 {
 					content = content.Delete(c-1, 1)
+					charCount--
 					c--
 					// Move cursor
 					if x > 0 {
 						x--
 					} else {
-						// Move up
-						y--
-						// TODO: After implementing reverse search, put x at the end of the line
-					}
-					charCount--
 
+						// Find start of last row
+						lineStart, err := content.SearchCharReverse('\n', c)
+						if err == nil {
+							if lineStart == -1 {
+								lineStart = 0
+							}
+							y--
+							// Compute length of the line we move to
+							diff := c - lineStart
+							x = diff
+						}
+					}
 					// === Draw ===
 					drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 				}

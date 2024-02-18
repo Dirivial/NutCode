@@ -363,7 +363,6 @@ func (n *Node) SearchChar(char rune, index, globalIndex int) int {
 }
 
 func (r *Rope) SearchCharReverse(char rune, startFrom int) (int, error) {
-	fmt.Println("\n ==== Reverse search ====")
 	if startFrom < 1 {
 		return -1, errors.New("Index less than 1.")
 	}

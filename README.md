@@ -9,15 +9,15 @@ I very much doubt that I will add syntax highlighting.
 
 - [x] Rope data structure (might need to work on this a bit more)
 
-- [ ] Basic Insert/Delete
+- [x] Basic Insert/Delete
 
   - [x] Insert characters
-  - [ ] Delete characters
+  - [x] Delete characters
 
-- [ ] Basic navigation
+- [x] Basic navigation
 
   - [x] Left/Right
-  - [ ] Up
+  - [x] Up
   - [x] Down
 
 - [x] Handle special characters
