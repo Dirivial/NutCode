@@ -9,11 +9,18 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+const (
+	NORMAL = iota
+	INSERT
+	COMMAND
+)
+
 // Completely redraw the screen
-func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content string) {
+func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content, fileName string, isSaved bool, mode int) {
 	s.Clear()
-	drawContent(s, cx, cy, offset, style, content)
+	drawContent(s, offset, style, content)
 	drawLineNumbers(s, lineNumberRoom)
+	drawStatus(s, mode, cy, cx, fileName, isSaved)
 }
 
 // Draw line numbers
@@ -32,7 +39,7 @@ func drawLineNumbers(s tcell.Screen, offset int) {
 }
 
 // Draw the content to the screen
-func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content string) {
+func drawContent(s tcell.Screen, offset int, style tcell.Style, content string) {
 	row := 0
 	col := offset
 	for _, r := range content {
@@ -45,6 +52,69 @@ func drawContent(s tcell.Screen, cx, cy, offset int, style tcell.Style, content 
 			col++
 		}
 	}
+}
+
+// Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
+func drawStatus(s tcell.Screen, mode, lineNr, colNr int, filename string, isSaved bool) {
+	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
+	w, h := s.Size()
+
+	// Draw information
+	curEnd := drawMode(s, mode, h, style)
+	curEnd = drawCursorPositionStatus(s, lineNr, colNr, curEnd, h, style)
+	curEnd = drawFileStatus(s, filename, isSaved, curEnd, h, style)
+
+	// Fill the rest of the row
+	for i := curEnd; i < w; i++ {
+		s.SetContent(i, h-1, rune(' '), nil, style)
+	}
+}
+
+// Draw file name & if the changes the user has made are saved
+func drawFileStatus(s tcell.Screen, fileName string, isSaved bool, startAt, height int, style tcell.Style) int {
+	info := ""
+	if !isSaved {
+		info = "*"
+	}
+	info += fileName
+
+	for i, r := range info {
+		s.SetContent(i+startAt, height-1, r, nil, style)
+	}
+	s.SetContent(len(info)+startAt, height-1, rune(' '), nil, style)
+	return startAt + len(info)
+
+}
+
+// Draw the current line and col number in the status bar
+func drawCursorPositionStatus(s tcell.Screen, lineNr, colNr, startAt, height int, style tcell.Style) int {
+	info := fmt.Sprintf(" %d:%d ", lineNr+1, colNr)
+	for i, r := range info {
+		s.SetContent(i+startAt, height-1, r, nil, style)
+	}
+	return startAt + len(info)
+}
+
+// Draw the current mode in the status bar
+func drawMode(s tcell.Screen, mode, height int, style tcell.Style) int {
+
+	modeString := ""
+	switch mode {
+	case NORMAL:
+		modeString = "NORMAL"
+	case INSERT:
+		modeString = "INSERT"
+	case COMMAND:
+		modeString = "COMMAND"
+	default:
+		modeString = "unknown"
+	}
+	s.SetContent(0, height-1, rune(' '), nil, style)
+	for i, r := range modeString {
+		s.SetContent(i+1, height-1, r, nil, style)
+	}
+	s.SetContent(len(modeString)+1, height-1, rune(' '), nil, style)
+	return len(modeString) + 2
 }
 
 func main() {
@@ -84,8 +154,7 @@ func main() {
 	tabSize := 4
 	lineNumRoom := 5
 	contentStart := lineNumRoom + 2
-	drawLineNumbers(s, lineNumRoom)
-	drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
+	drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent(), "myfile", false, NORMAL)
 
 	// Event loop
 	x, y, c := 0, 0, 0
@@ -204,7 +273,7 @@ func main() {
 						}
 					}
 					// === Draw ===
-					drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
+					//		drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 				}
 				// Move cursor depending on line length
 			} else if ev.Key() == tcell.KeyEnter {
@@ -216,7 +285,7 @@ func main() {
 				c++
 
 				// === Draw ===
-				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
+				//	drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 			} else if ev.Key() == tcell.KeyTab || ev.Key() == tcell.KeyTAB {
 				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
@@ -225,7 +294,7 @@ func main() {
 				c += tabSize
 
 				// === Draw ===
-				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
+				//	drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent())
 			} else {
 				// Catch-all for remaining characters,
 				// adding them to the content at the current cursor position
@@ -233,11 +302,10 @@ func main() {
 				charCount++
 				x++
 				c++
-
-				// === Draw ===
-				drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent())
 			}
 
+			// === Draw ===
+			drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent(), "myfile", false, NORMAL)
 			s.ShowCursor(x+contentStart, y)
 		}
 	}
