@@ -96,8 +96,11 @@ func main() {
 			} else if ev.Key() == tcell.KeyCtrlL {
 				s.Sync()
 			} else if ev.Key() == tcell.KeyRight {
-				c++
-				x++
+				nextRune := content.Index(c + 1)
+				if nextRune != "\n" && nextRune != "" {
+					c++
+					x++
+				}
 			} else if ev.Key() == tcell.KeyLeft {
 				if x > 0 {
 					c--

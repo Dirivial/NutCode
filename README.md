@@ -16,7 +16,7 @@ I very much doubt that I will add syntax highlighting.
 
 - [ ] Basic navigation
 
-  - [ ] Left/Right
+  - [x] Left/Right
   - [ ] Up
   - [x] Down
 
