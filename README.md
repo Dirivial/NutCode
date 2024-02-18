@@ -20,10 +20,10 @@ I very much doubt that I will add syntax highlighting.
   - [ ] Up
   - [x] Down
 
-- [ ] Display some special characters
+- [x] Handle special characters
 
   - [x] Newline
-  - [ ] Tab
+  - [x] Tab
 
 - [ ] Reading text files
 - [ ] Writing to text files

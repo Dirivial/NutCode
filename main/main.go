@@ -4,6 +4,7 @@ import (
 	"NutCode/rope"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -41,7 +42,7 @@ func main() {
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
 
 	// TODO: Remove and implement reading of files
-	testContent := string("This is some text content. I wonder how this will be displayed.\nBruhmode.engaged\n,,\n\n,\nBrusch")
+	testContent := string("This is some text content. I wonder how this will be displayed.\n    Bruhmode.engaged\n,,\n\n,\nBrusch")
 	content := rope.New(testContent)
 	charCount := len(testContent)
 
@@ -71,6 +72,7 @@ func main() {
 	}
 	defer quit()
 
+	tabSize := 4
 	lineNumRoom := 5
 	contentStart := lineNumRoom + 2
 	drawLineNumbers(s, lineNumRoom)
@@ -171,6 +173,14 @@ func main() {
 				x = 0
 				y++
 				c++
+			} else if ev.Key() == tcell.KeyTab || ev.Key() == tcell.KeyTAB {
+				content = content.Insert(c, strings.Repeat(" ", tabSize))
+				charCount += tabSize
+				s.Clear()
+				drawContent(s, 0, 0, contentStart, defStyle, content.GetContent())
+				drawLineNumbers(s, lineNumRoom)
+				x += tabSize
+				c += tabSize
 			} else {
 				content = content.Insert(c, string(ev.Rune()))
 				charCount++
