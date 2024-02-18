@@ -2,8 +2,10 @@ package main
 
 import (
 	"NutCode/rope"
+	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
@@ -118,13 +120,44 @@ func drawMode(s tcell.Screen, mode, height int, style tcell.Style) int {
 }
 
 func main() {
+
+	filename := flag.String("filename", "", "the name of the file to read from or write to")
+	// Parse command-line arguments
+
+	flag.Parse()
+
+	// Check if the filename flag is provided
+	if *filename == "" {
+		fmt.Println("Please provide a filename")
+		os.Exit(1)
+	}
+	// Open the file
+	file, err := os.OpenFile(*filename, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		fmt.Println("Error:", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	// Get the file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Println("Error getting file info:", err)
+		return
+	}
+	fileSize := fileInfo.Size()
+
+	// Read the entire file into a byte slice
+	data := make([]byte, fileSize)
+	_, err = file.Read(data)
+	if err != nil {
+		fmt.Println("Error reading file:", err)
+		return
+	}
+	content := rope.New(string(data))
+	charCount := len(data)
+
 	defStyle := tcell.StyleDefault.Background(tcell.ColorReset).Foreground(tcell.ColorReset)
-
-	// TODO: Remove and implement reading of files
-	testContent := string("This is some text content. I wonder how this will be displayed.\n    Bruhmode.engaged\n,,\n\n,\nBrusch")
-	content := rope.New(testContent)
-	charCount := len(testContent)
-
 	// Initialize screen
 	s, err := tcell.NewScreen()
 	if err != nil {
