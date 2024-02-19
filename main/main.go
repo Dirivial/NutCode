@@ -37,16 +37,16 @@ type EditorWindow struct {
 }
 
 // Completely redraw the screen
-func drawFull(ew EditorWindow, content, fileName string, unsavedChanges bool, mode int) {
+func (ew *EditorWindow) drawFull(content, fileName string, unsavedChanges bool, mode int) {
 	ew.screen.Clear()
-	drawContent(ew, content)
-	drawLineNumbers(ew)
-	drawStatus(ew, mode, fileName, unsavedChanges)
+	ew.drawContent(content)
+	ew.drawLineNumbers()
+	ew.drawStatus(mode, fileName, unsavedChanges)
 	ew.screen.ShowCursor(ew.cursor.x+ew.contentOffset, ew.cursor.y)
 }
 
 // Draw line numbers
-func drawLineNumbers(ew EditorWindow) {
+func (ew *EditorWindow) drawLineNumbers() {
 	_, height := ew.screen.Size()
 	style := tcell.StyleDefault
 
@@ -61,7 +61,7 @@ func drawLineNumbers(ew EditorWindow) {
 }
 
 // Draw the content to the screen
-func drawContent(ew EditorWindow, content string) {
+func (ew *EditorWindow) drawContent(content string) {
 	row := 0
 	col := ew.contentOffset
 	for _, r := range content {
@@ -77,7 +77,7 @@ func drawContent(ew EditorWindow, content string) {
 }
 
 // Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
-func drawStatus(ew EditorWindow, mode int, filename string, unsavedChanges bool) {
+func (ew *EditorWindow) drawStatus(mode int, filename string, unsavedChanges bool) {
 	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
 	w, h := ew.screen.Size()
 
@@ -224,7 +224,7 @@ func main() {
 		cursor:          cursor,
 		style:           defStyle,
 	}
-	drawFull(editor, content.GetContent(), *filename, unsavedChanges, mode)
+	editor.drawFull(content.GetContent(), *filename, unsavedChanges, mode)
 
 	// Event loop
 	s.ShowCursor(editor.contentOffset, editor.cursor.y)
@@ -380,7 +380,7 @@ func main() {
 			}
 
 			// === Draw ===
-			drawFull(editor, content.GetContent(), *filename, unsavedChanges, mode)
+			editor.drawFull(content.GetContent(), *filename, unsavedChanges, mode)
 		}
 	}
 }
