@@ -17,58 +17,78 @@ const (
 	COMMAND
 )
 
+// Type for representing the cursor position
+type Cursor struct {
+	x    int
+	y    int
+	memX int
+}
+
+// Type for the most common data related to the window
+type EditorWindow struct {
+	screen          tcell.Screen
+	style           tcell.Style
+	cursor          Cursor
+	endRow          int
+	startRow        int
+	startCol        int
+	lineNumberWidth int
+	contentOffset   int
+}
+
 // Completely redraw the screen
-func drawFull(s tcell.Screen, lineNumberRoom, offset, cx, cy int, style tcell.Style, content, fileName string, unsavedChanges bool, mode int) {
-	s.Clear()
-	drawContent(s, offset, style, content)
-	drawLineNumbers(s, lineNumberRoom)
-	drawStatus(s, mode, cy, cx, fileName, unsavedChanges)
+func drawFull(ew EditorWindow, content, fileName string, unsavedChanges bool, mode int) {
+	ew.screen.Clear()
+	drawContent(ew, content)
+	drawLineNumbers(ew)
+	drawStatus(ew, mode, fileName, unsavedChanges)
+	ew.screen.ShowCursor(ew.cursor.x+ew.contentOffset, ew.cursor.y)
 }
 
 // Draw line numbers
-func drawLineNumbers(s tcell.Screen, offset int) {
-	_, height := s.Size()
+func drawLineNumbers(ew EditorWindow) {
+	_, height := ew.screen.Size()
 	style := tcell.StyleDefault
 
 	for i := 0; i < height; i++ {
 		str := fmt.Sprint(i)
-		off := offset - len(str)
+		off := ew.lineNumberWidth - len(str)
 		for r := range str {
 			byte := rune(str[r])
-			s.SetContent(r+off, i, byte, nil, style)
+			ew.screen.SetContent(r+off, i, byte, nil, style)
 		}
 	}
 }
 
 // Draw the content to the screen
-func drawContent(s tcell.Screen, offset int, style tcell.Style, content string) {
+func drawContent(ew EditorWindow, content string) {
 	row := 0
-	col := offset
+	col := ew.contentOffset
 	for _, r := range content {
 		if r == '\n' {
 			row++
-			col = offset
-			s.SetContent(col, row, r, nil, style)
+			col = ew.contentOffset
+			ew.screen.SetContent(col, row, r, nil, ew.style)
 		} else {
-			s.SetContent(col, row, r, nil, style)
+			ew.screen.SetContent(col, row, r, nil, ew.style)
 			col++
 		}
 	}
 }
 
 // Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
-func drawStatus(s tcell.Screen, mode, lineNr, colNr int, filename string, unsavedChanges bool) {
+func drawStatus(ew EditorWindow, mode int, filename string, unsavedChanges bool) {
 	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
-	w, h := s.Size()
+	w, h := ew.screen.Size()
 
 	// Draw information
-	curEnd := drawMode(s, mode, h, style)
-	curEnd = drawCursorPositionStatus(s, lineNr, colNr, curEnd, h, style)
-	curEnd = drawFileStatus(s, filename, unsavedChanges, curEnd, h, style)
+	curEnd := drawMode(ew.screen, mode, h, style)
+	curEnd = drawCursorPositionStatus(ew.screen, ew.cursor.x, ew.cursor.y, curEnd, h, style)
+	curEnd = drawFileStatus(ew.screen, filename, unsavedChanges, curEnd, h, style)
 
 	// Fill the rest of the row
 	for i := curEnd; i < w; i++ {
-		s.SetContent(i, h-1, rune(' '), nil, style)
+		ew.screen.SetContent(i, h-1, rune(' '), nil, style)
 	}
 }
 
@@ -185,14 +205,29 @@ func main() {
 	defer quit()
 
 	tabSize := 4
-	lineNumRoom := 5
-	contentStart := lineNumRoom + 2
 	unsavedChanges := false
-	drawFull(s, lineNumRoom, contentStart, 0, 0, defStyle, content.GetContent(), "myfile", unsavedChanges, NORMAL)
+	mode := NORMAL
+	c := 0
+	_, h := s.Size()
+	cursor := Cursor{
+		x:    0,
+		y:    0,
+		memX: 0,
+	}
+	editor := EditorWindow{
+		screen:          s,
+		startRow:        0,
+		endRow:          h,
+		startCol:        0,
+		lineNumberWidth: 5,
+		contentOffset:   7,
+		cursor:          cursor,
+		style:           defStyle,
+	}
+	drawFull(editor, content.GetContent(), *filename, unsavedChanges, mode)
 
 	// Event loop
-	x, y, c := 0, 0, 0
-	s.ShowCursor(contentStart, y)
+	s.ShowCursor(editor.contentOffset, editor.cursor.y)
 	for {
 		// Update screen
 		s.Show()
@@ -222,12 +257,12 @@ func main() {
 				nextRune := content.Index(c + 1)
 				if nextRune != "\n" && nextRune != "" {
 					c++
-					x++
+					editor.cursor.x++
 				}
 			} else if ev.Key() == tcell.KeyLeft {
-				if x > 0 {
+				if editor.cursor.x > 0 {
 					c--
-					x--
+					editor.cursor.x--
 				}
 			} else if ev.Key() == tcell.KeyDown {
 				// Move cursor depending on line length
@@ -237,7 +272,7 @@ func main() {
 					// Note: this moves us after the newline
 					c = minMove
 					//x = 0
-					y++
+					editor.cursor.y++
 					// Check if we can move the pointer foward to the old x position
 					lineEnd := content.SearchChar('\n', c+1)
 					if lineEnd != -1 {
@@ -245,25 +280,25 @@ func main() {
 						diff := lineEnd - minMove
 
 						if diff > 0 {
-							if diff <= x {
+							if diff <= editor.cursor.x {
 								// Move x to the end of the line (-1 for the newline)
-								x = diff - 1
+								editor.cursor.x = diff - 1
 							}
-							c += x
+							c += editor.cursor.x
 						} else {
-							x = 0
+							editor.cursor.x = 0
 						}
 					} else {
-						x = 0
+						editor.cursor.x = 0
 					}
 				}
 			} else if ev.Key() == tcell.KeyUp {
-				if y > 0 {
+				if editor.cursor.y > 0 {
 					// Find end of last row
 					lineEnd, err := content.SearchCharReverse('\n', c)
 					if lineEnd != -1 && err == nil {
 						// Move up
-						y--
+						editor.cursor.y--
 						// Find start of last row
 						lineStart, err := content.SearchCharReverse('\n', lineEnd-1)
 						if err == nil {
@@ -275,21 +310,21 @@ func main() {
 							diff := lineEnd - lineStart
 
 							if diff > 0 {
-								if diff <= x {
+								if diff <= editor.cursor.x {
 									// Move x to the end of the line (-1 for the newline)
-									x = diff - 1
+									editor.cursor.x = diff - 1
 								}
-								c += x
+								c += editor.cursor.x
 							} else {
-								x = 0
+								editor.cursor.x = 0
 							}
 						} else {
-							x = 0
+							editor.cursor.x = 0
 						}
 					}
 				} else {
 					// Move to the beginning of the file
-					x = 0
+					editor.cursor.x = 0
 					c = 0
 				}
 			} else if ev.Key() == tcell.KeyBackspace || ev.Key() == tcell.KeyBS || ev.Key() == tcell.KeyBackspace2 {
@@ -300,8 +335,8 @@ func main() {
 					c--
 					unsavedChanges = true
 					// Move cursor
-					if x > 0 {
-						x--
+					if editor.cursor.x > 0 {
+						editor.cursor.x--
 					} else {
 
 						// Find start of last row
@@ -310,10 +345,10 @@ func main() {
 							if lineStart == -1 {
 								lineStart = 0
 							}
-							y--
+							editor.cursor.y--
 							// Compute length of the line we move to
 							diff := c - lineStart
-							x = diff
+							editor.cursor.x = diff
 						}
 					}
 				}
@@ -322,8 +357,8 @@ func main() {
 				// Insert a newline and move to the next line
 				content = content.Insert(c, string('\n'))
 				charCount++
-				x = 0
-				y++
+				editor.cursor.x = 0
+				editor.cursor.y++
 				c++
 				unsavedChanges = true
 
@@ -331,7 +366,7 @@ func main() {
 				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
 				charCount += tabSize
-				x += tabSize
+				editor.cursor.x += tabSize
 				c += tabSize
 				unsavedChanges = true
 
@@ -340,13 +375,12 @@ func main() {
 				// adding them to the content at the current cursor position
 				content = content.Insert(c, string(ev.Rune()))
 				charCount++
-				x++
+				editor.cursor.x++
 				c++
 			}
 
 			// === Draw ===
-			drawFull(s, lineNumRoom, contentStart, x, y, defStyle, content.GetContent(), *filename, unsavedChanges, NORMAL)
-			s.ShowCursor(x+contentStart, y)
+			drawFull(editor, content.GetContent(), *filename, unsavedChanges, mode)
 		}
 	}
 }

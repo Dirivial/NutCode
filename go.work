@@ -2,6 +2,6 @@ go 1.23
 
 use ./main
 
-use ./screen
+use ./editor
 
 use ./rope
