@@ -1,6 +1,7 @@
 package main
 
 import (
+	"NutCode/editor"
 	"NutCode/rope"
 	"flag"
 	"fmt"
@@ -16,128 +17,6 @@ const (
 	INSERT
 	COMMAND
 )
-
-// Type for representing the cursor position
-type Cursor struct {
-	x    int
-	y    int
-	memX int
-}
-
-// Type for the most common data related to the window
-type EditorWindow struct {
-	screen          tcell.Screen
-	style           tcell.Style
-	cursor          Cursor
-	endRow          int
-	startRow        int
-	startCol        int
-	lineNumberWidth int
-	contentOffset   int
-}
-
-// Completely redraw the screen
-func (ew *EditorWindow) drawFull(content, fileName string, unsavedChanges bool, mode int) {
-	ew.screen.Clear()
-	ew.drawContent(content)
-	ew.drawLineNumbers()
-	ew.drawStatus(mode, fileName, unsavedChanges)
-	ew.screen.ShowCursor(ew.cursor.x+ew.contentOffset, ew.cursor.y)
-}
-
-// Draw line numbers
-func (ew *EditorWindow) drawLineNumbers() {
-	_, height := ew.screen.Size()
-	style := tcell.StyleDefault
-
-	for i := 0; i < height; i++ {
-		str := fmt.Sprint(i)
-		off := ew.lineNumberWidth - len(str)
-		for r := range str {
-			byte := rune(str[r])
-			ew.screen.SetContent(r+off, i, byte, nil, style)
-		}
-	}
-}
-
-// Draw the content to the screen
-func (ew *EditorWindow) drawContent(content string) {
-	row := 0
-	col := ew.contentOffset
-	for _, r := range content {
-		if r == '\n' {
-			row++
-			col = ew.contentOffset
-			ew.screen.SetContent(col, row, r, nil, ew.style)
-		} else {
-			ew.screen.SetContent(col, row, r, nil, ew.style)
-			col++
-		}
-	}
-}
-
-// Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
-func (ew *EditorWindow) drawStatus(mode int, filename string, unsavedChanges bool) {
-	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
-	w, h := ew.screen.Size()
-
-	// Draw information
-	curEnd := drawMode(ew.screen, mode, h, style)
-	curEnd = drawCursorPositionStatus(ew.screen, ew.cursor.x, ew.cursor.y, curEnd, h, style)
-	curEnd = drawFileStatus(ew.screen, filename, unsavedChanges, curEnd, h, style)
-
-	// Fill the rest of the row
-	for i := curEnd; i < w; i++ {
-		ew.screen.SetContent(i, h-1, rune(' '), nil, style)
-	}
-}
-
-// Draw file name & if the changes the user has made are saved
-func drawFileStatus(s tcell.Screen, fileName string, unsavedChanges bool, startAt, height int, style tcell.Style) int {
-	info := ""
-	if unsavedChanges {
-		info = "*"
-	}
-	info += fileName
-
-	for i, r := range info {
-		s.SetContent(i+startAt, height-1, r, nil, style)
-	}
-	s.SetContent(len(info)+startAt, height-1, rune(' '), nil, style)
-	return startAt + len(info)
-
-}
-
-// Draw the current line and col number in the status bar
-func drawCursorPositionStatus(s tcell.Screen, lineNr, colNr, startAt, height int, style tcell.Style) int {
-	info := fmt.Sprintf(" %d:%d ", lineNr+1, colNr)
-	for i, r := range info {
-		s.SetContent(i+startAt, height-1, r, nil, style)
-	}
-	return startAt + len(info)
-}
-
-// Draw the current mode in the status bar
-func drawMode(s tcell.Screen, mode, height int, style tcell.Style) int {
-
-	modeString := ""
-	switch mode {
-	case NORMAL:
-		modeString = "NORMAL"
-	case INSERT:
-		modeString = "INSERT"
-	case COMMAND:
-		modeString = "COMMAND"
-	default:
-		modeString = "unknown"
-	}
-	s.SetContent(0, height-1, rune(' '), nil, style)
-	for i, r := range modeString {
-		s.SetContent(i+1, height-1, r, nil, style)
-	}
-	s.SetContent(len(modeString)+1, height-1, rune(' '), nil, style)
-	return len(modeString) + 2
-}
 
 func main() {
 
@@ -209,25 +88,11 @@ func main() {
 	mode := NORMAL
 	c := 0
 	_, h := s.Size()
-	cursor := Cursor{
-		x:    0,
-		y:    0,
-		memX: 0,
-	}
-	editor := EditorWindow{
-		screen:          s,
-		startRow:        0,
-		endRow:          h,
-		startCol:        0,
-		lineNumberWidth: 5,
-		contentOffset:   7,
-		cursor:          cursor,
-		style:           defStyle,
-	}
-	editor.drawFull(content.GetContent(), *filename, unsavedChanges, mode)
 
-	// Event loop
-	s.ShowCursor(editor.contentOffset, editor.cursor.y)
+	editor := editor.New(s, 0, h, 0, 5, 7, defStyle)
+
+	editor.DrawFull(content.GetContent(), *filename, unsavedChanges, mode)
+
 	for {
 		// Update screen
 		s.Show()
@@ -257,12 +122,12 @@ func main() {
 				nextRune := content.Index(c + 1)
 				if nextRune != "\n" && nextRune != "" {
 					c++
-					editor.cursor.x++
+					//editor.Cursor.X++
 				}
 			} else if ev.Key() == tcell.KeyLeft {
-				if editor.cursor.x > 0 {
+				if editor.Cursor.X > 0 {
 					c--
-					editor.cursor.x--
+					editor.Cursor.X--
 				}
 			} else if ev.Key() == tcell.KeyDown {
 				// Move cursor depending on line length
@@ -272,7 +137,7 @@ func main() {
 					// Note: this moves us after the newline
 					c = minMove
 					//x = 0
-					editor.cursor.y++
+					editor.Cursor.Y++
 					// Check if we can move the pointer foward to the old x position
 					lineEnd := content.SearchChar('\n', c+1)
 					if lineEnd != -1 {
@@ -280,25 +145,25 @@ func main() {
 						diff := lineEnd - minMove
 
 						if diff > 0 {
-							if diff <= editor.cursor.x {
+							if diff <= editor.Cursor.X {
 								// Move x to the end of the line (-1 for the newline)
-								editor.cursor.x = diff - 1
+								editor.Cursor.X = diff - 1
 							}
-							c += editor.cursor.x
+							c += editor.Cursor.X
 						} else {
-							editor.cursor.x = 0
+							editor.Cursor.X = 0
 						}
 					} else {
-						editor.cursor.x = 0
+						editor.Cursor.X = 0
 					}
 				}
 			} else if ev.Key() == tcell.KeyUp {
-				if editor.cursor.y > 0 {
+				if editor.Cursor.Y > 0 {
 					// Find end of last row
 					lineEnd, err := content.SearchCharReverse('\n', c)
 					if lineEnd != -1 && err == nil {
 						// Move up
-						editor.cursor.y--
+						editor.Cursor.Y--
 						// Find start of last row
 						lineStart, err := content.SearchCharReverse('\n', lineEnd-1)
 						if err == nil {
@@ -310,21 +175,21 @@ func main() {
 							diff := lineEnd - lineStart
 
 							if diff > 0 {
-								if diff <= editor.cursor.x {
+								if diff <= editor.Cursor.X {
 									// Move x to the end of the line (-1 for the newline)
-									editor.cursor.x = diff - 1
+									editor.Cursor.X = diff - 1
 								}
-								c += editor.cursor.x
+								c += editor.Cursor.X
 							} else {
-								editor.cursor.x = 0
+								editor.Cursor.X = 0
 							}
 						} else {
-							editor.cursor.x = 0
+							editor.Cursor.X = 0
 						}
 					}
 				} else {
 					// Move to the beginning of the file
-					editor.cursor.x = 0
+					editor.Cursor.X = 0
 					c = 0
 				}
 			} else if ev.Key() == tcell.KeyBackspace || ev.Key() == tcell.KeyBS || ev.Key() == tcell.KeyBackspace2 {
@@ -335,8 +200,8 @@ func main() {
 					c--
 					unsavedChanges = true
 					// Move cursor
-					if editor.cursor.x > 0 {
-						editor.cursor.x--
+					if editor.Cursor.X > 0 {
+						editor.Cursor.X--
 					} else {
 
 						// Find start of last row
@@ -345,10 +210,10 @@ func main() {
 							if lineStart == -1 {
 								lineStart = 0
 							}
-							editor.cursor.y--
+							editor.Cursor.Y--
 							// Compute length of the line we move to
 							diff := c - lineStart
-							editor.cursor.x = diff
+							editor.Cursor.X = diff
 						}
 					}
 				}
@@ -357,8 +222,8 @@ func main() {
 				// Insert a newline and move to the next line
 				content = content.Insert(c, string('\n'))
 				charCount++
-				editor.cursor.x = 0
-				editor.cursor.y++
+				editor.Cursor.X = 0
+				editor.Cursor.Y++
 				c++
 				unsavedChanges = true
 
@@ -366,7 +231,7 @@ func main() {
 				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
 				charCount += tabSize
-				editor.cursor.x += tabSize
+				editor.Cursor.X += tabSize
 				c += tabSize
 				unsavedChanges = true
 
@@ -375,12 +240,12 @@ func main() {
 				// adding them to the content at the current cursor position
 				content = content.Insert(c, string(ev.Rune()))
 				charCount++
-				editor.cursor.x++
+				editor.Cursor.X++
 				c++
 			}
 
 			// === Draw ===
-			editor.drawFull(content.GetContent(), *filename, unsavedChanges, mode)
+			editor.DrawFull(content.GetContent(), *filename, unsavedChanges, mode)
 		}
 	}
 }
