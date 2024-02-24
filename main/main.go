@@ -85,12 +85,13 @@ func main() {
 
 	tabSize := 4
 	unsavedChanges := false
-	mode := NORMAL
 	c := 0
 
+	cachedContent := content.GetContent()
 	editor := editor.New(s, 0, 0, 5, 7, defStyle)
+	editor.ComputeNumRows(cachedContent)
 
-	editor.DrawFull(content.GetContent(), *filename, unsavedChanges, mode)
+	editor.DrawFull(cachedContent, *filename, unsavedChanges)
 
 	for {
 		// Update screen
@@ -121,12 +122,12 @@ func main() {
 				nextRune := content.Index(c + 1)
 				if nextRune != "\n" && nextRune != "" {
 					c++
-					editor.Cursor.X++
+					editor.MoveX(1)
 				}
 			} else if ev.Key() == tcell.KeyLeft {
 				if editor.Cursor.X > 0 {
 					c--
-					editor.Cursor.X--
+					editor.MoveX(-1)
 				}
 			} else if ev.Key() == tcell.KeyDown {
 				// Move cursor depending on line length
@@ -143,16 +144,16 @@ func main() {
 						diff := lineEnd - minMove
 
 						if diff > 0 {
-							if diff <= editor.Cursor.X {
+							if diff <= editor.Cursor.X+editor.StartCol {
 								// Move x to the end of the line (-1 for the newline)
-								editor.Cursor.X = diff - 1
+								editor.SetX(diff - 1)
 							}
-							c += editor.Cursor.X
+							c += editor.Cursor.X + editor.StartCol
 						} else {
-							editor.Cursor.X = 0
+							editor.ResetX()
 						}
 					} else {
-						editor.Cursor.X = 0
+						editor.ResetX()
 					}
 				}
 			} else if ev.Key() == tcell.KeyUp {
@@ -173,22 +174,22 @@ func main() {
 							diff := lineEnd - lineStart
 
 							if diff > 0 {
-								if diff <= editor.Cursor.X {
+								if diff <= editor.Cursor.X+editor.StartCol {
 									// Move x to the end of the line (-1 for the newline)
-									editor.Cursor.X = diff - 1
+									editor.SetX(diff - 1)
 								}
-								c += editor.Cursor.X
+								c += editor.Cursor.X + editor.StartCol
 							} else {
-								editor.Cursor.X = 0
+								editor.ResetX()
 							}
 						} else {
-							editor.Cursor.X = 0
+							editor.ResetX()
 						}
 					}
 				} else {
 					// Move to the beginning of the file
-					editor.Cursor.X = 0
 					c = 0
+					editor.ResetX()
 				}
 			} else if ev.Key() == tcell.KeyBackspace || ev.Key() == tcell.KeyBS || ev.Key() == tcell.KeyBackspace2 {
 				// Make sure there is something to delete
@@ -197,9 +198,10 @@ func main() {
 					charCount--
 					c--
 					unsavedChanges = true
+					cachedContent = content.GetContent()
 					// Move cursor
 					if editor.Cursor.X > 0 {
-						editor.Cursor.X--
+						editor.MoveX(-1)
 					} else {
 
 						// Find start of last row
@@ -208,10 +210,11 @@ func main() {
 							if lineStart == -1 {
 								lineStart = 0
 							}
-							editor.Cursor.Y--
+							editor.MoveY(-1)
 							// Compute length of the line we move to
 							diff := c - lineStart
-							editor.Cursor.X = diff
+							editor.SetX(diff)
+							editor.NumRows--
 						}
 					}
 				}
@@ -220,30 +223,35 @@ func main() {
 				// Insert a newline and move to the next line
 				content = content.Insert(c, string('\n'))
 				charCount++
-				editor.Cursor.X = 0
-				editor.Cursor.Y++
+				editor.NumRows++
+				editor.ResetX()
+				editor.MoveY(1)
 				c++
 				unsavedChanges = true
+				cachedContent = content.GetContent()
 
 			} else if ev.Key() == tcell.KeyTab || ev.Key() == tcell.KeyTAB {
 				// Tab key, replaces with tabSize number of spaces
 				content = content.Insert(c, strings.Repeat(" ", tabSize))
 				charCount += tabSize
-				editor.Cursor.X += tabSize
+				editor.MoveX(tabSize)
 				c += tabSize
 				unsavedChanges = true
+				cachedContent = content.GetContent()
 
 			} else {
 				// Catch-all for remaining characters,
 				// adding them to the content at the current cursor position
 				content = content.Insert(c, string(ev.Rune()))
 				charCount++
-				editor.Cursor.X++
+				editor.MoveX(1)
 				c++
+				unsavedChanges = true
+				cachedContent = content.GetContent()
 			}
 
 			// === Draw ===
-			editor.DrawFull(content.GetContent(), *filename, unsavedChanges, mode)
+			editor.DrawFull(cachedContent, *filename, unsavedChanges)
 		}
 	}
 }

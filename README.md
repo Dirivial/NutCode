@@ -27,10 +27,10 @@ I very much doubt that I will add syntax highlighting.
 
 - [x] Reading text files
 - [x] Writing to text files
-- [ ] Scrolling on large text content
+- [x] Scrolling on large text content
 
   - [x] Y-axis
-  - [ ] X-axis
+  - [x] X-axis
 
 - [x] Displaying line numbers
 
@@ -38,16 +38,6 @@ I very much doubt that I will add syntax highlighting.
   - [x] Relative numbers
 
 - [ ] Cursor should remember column
-
-- [ ] Vim bindings (subset)
-
-  - [ ] Normal mode
-  - [ ] Insert mode
-  - [ ] Visual mode
-  - [ ] Command mode (maybe)
-
-- [ ] Undo
-- [ ] Redo
 
 ## Dependencies
 

@@ -14,10 +14,9 @@ const (
 
 // Type for representing the cursor position
 type Cursor struct {
-	X          int
-	Y          int
-	MemX       int
-	currentRow int
+	X    int
+	Y    int
+	MemX int
 }
 
 // Type for the most common data related to the window
@@ -29,17 +28,16 @@ type EditorWindow struct {
 	height          int
 	width           int
 	startRow        int
-	startCol        int
+	StartCol        int
 	lineNumberWidth int
 	contentOffset   int
 }
 
-func New(s tcell.Screen, startRow, startCol, lineNumberWidth, contentOffset int, style tcell.Style) *EditorWindow {
+func New(s tcell.Screen, startRow, StartCol, lineNumberWidth, contentOffset int, style tcell.Style) *EditorWindow {
 	cursor := Cursor{
-		X:          0,
-		Y:          0,
-		MemX:       0,
-		currentRow: 0,
+		X:    0,
+		Y:    0,
+		MemX: 0,
 	}
 	w, h := s.Size()
 	return &EditorWindow{
@@ -48,10 +46,18 @@ func New(s tcell.Screen, startRow, startCol, lineNumberWidth, contentOffset int,
 		height:          h,
 		width:           w,
 		startRow:        startRow,
-		startCol:        startCol,
+		StartCol:        StartCol,
 		lineNumberWidth: lineNumberWidth,
 		contentOffset:   contentOffset,
 		style:           style,
+	}
+}
+
+func (ew *EditorWindow) ComputeNumRows(content string) {
+	for _, r := range content {
+		if r == '\n' {
+			ew.NumRows++
+		}
 	}
 }
 
@@ -61,7 +67,12 @@ func (ew *EditorWindow) MoveY(numRows int) {
 		if ew.Cursor.Y+numRows+5 >= ew.height && ew.startRow+numRows+ew.height-1 <= ew.NumRows+1 {
 			ew.startRow = min(ew.startRow+numRows, ew.NumRows+1)
 		} else {
-			ew.Cursor.Y += numRows
+			if ew.Cursor.Y+numRows == ew.height-1 {
+				ew.startRow += numRows
+			} else {
+				ew.Cursor.Y += numRows
+
+			}
 		}
 	} else {
 		// Check if we should move the window up
@@ -87,22 +98,51 @@ func min(a, b int) int {
 }
 
 func (ew *EditorWindow) MoveX(numCols int) {
-	ew.Cursor.X += numCols
-}
-
-func (ew *EditorWindow) MoveWindowX(numCols int) {
-	ew.startCol += numCols
-	if ew.startCol < 0 {
-		ew.startCol = 0
+	if numCols > 0 {
+		if ew.Cursor.X+numCols+5+ew.contentOffset+ew.lineNumberWidth >= ew.width {
+			ew.StartCol += numCols
+		} else {
+			ew.Cursor.X += numCols
+		}
+	} else {
+		if ew.Cursor.X+numCols <= ew.StartCol {
+			if ew.StartCol > -1*numCols {
+				ew.StartCol += numCols
+			} else {
+				ew.Cursor.X = max(ew.StartCol+numCols, 0)
+				ew.StartCol = 0
+			}
+		} else {
+			ew.Cursor.X = max(ew.Cursor.X+numCols, 0)
+		}
 	}
 }
 
+func (ew *EditorWindow) SetX(col int) {
+	offset := ew.contentOffset + ew.lineNumberWidth
+	if col+5 > ew.width-offset {
+		// Column outside width
+		ew.StartCol = col + 5 - ew.height
+		ew.Cursor.X = col + 5 - ew.StartCol
+
+	} else {
+		// Column not outside width
+		ew.StartCol = 0
+		ew.Cursor.X = col
+	}
+}
+
+func (ew *EditorWindow) ResetX() {
+	ew.StartCol = 0
+	ew.Cursor.X = 0
+}
+
 // Completely redraw the screen
-func (ew *EditorWindow) DrawFull(content, fileName string, unsavedChanges bool, mode int) {
+func (ew *EditorWindow) DrawFull(content, fileName string, unsavedChanges bool) {
 	ew.screen.Clear()
 	ew.DrawContent(content)
 	ew.DrawLineNumbers()
-	ew.DrawStatus(mode, fileName, unsavedChanges)
+	ew.DrawStatus(fileName, unsavedChanges)
 	ew.screen.ShowCursor(ew.Cursor.X+ew.contentOffset, ew.Cursor.Y)
 }
 
@@ -140,41 +180,48 @@ func (ew *EditorWindow) DrawContent(content string) {
 	row := 0
 	col := ew.contentOffset
 	epicCol := col
+	minCol := ew.contentOffset + ew.StartCol
 	activeRow := tcell.StyleDefault.Background(tcell.Color24).Foreground(tcell.ColorReset)
 	for _, r := range content {
+		if row > ew.NumRows {
+			// Ignore rest of file
+			break
+		}
 		if r == '\n' {
 			row++
-			col = ew.contentOffset
 			if row >= ew.startRow {
 				ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+				col = ew.contentOffset
 			}
 		} else {
 			if row >= ew.startRow && row <= ew.startRow+ew.height {
 				if row-ew.startRow == ew.Cursor.Y {
-					ew.screen.SetContent(col, row-ew.startRow, r, nil, activeRow)
+					if col >= minCol {
+						ew.screen.SetContent(col-ew.StartCol, row-ew.startRow, r, nil, activeRow)
+					}
 					epicCol = col
 				} else {
-					ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+					if col >= minCol {
+						ew.screen.SetContent(col-ew.StartCol, row-ew.startRow, r, nil, ew.style)
+					}
 				}
+				col++
 			}
-			col++
 		}
 	}
 	// Fill rest of activeRow
-	for i := epicCol + 1; i < ew.width; i++ {
+	for i := epicCol + 1 - ew.StartCol; i < ew.width; i++ {
 		ew.screen.SetContent(i, ew.Cursor.Y, ' ', nil, activeRow)
 	}
-	ew.NumRows = row
 }
 
-// Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
-func (ew *EditorWindow) DrawStatus(mode int, filename string, unsavedChanges bool) {
+// Draw a statusbar showing line:col numbers, filename and if there are unsaved changes
+func (ew *EditorWindow) DrawStatus(filename string, unsavedChanges bool) {
 	style := tcell.StyleDefault.Background(tcell.Color18).Foreground(tcell.ColorReset)
 	w, h := ew.screen.Size()
 
 	// Draw information
-	curEnd := drawMode(ew.screen, mode, h, style)
-	curEnd = drawCursorPositionStatus(ew.screen, ew.Cursor.X+ew.startCol, ew.Cursor.Y+ew.startRow, curEnd, h, style)
+	curEnd := drawCursorPositionStatus(ew.screen, ew.Cursor.X+ew.StartCol, ew.Cursor.Y+ew.startRow, 0, h, style)
 	curEnd = drawFileStatus(ew.screen, filename, unsavedChanges, curEnd, h, style)
 
 	// Fill the rest of the row
