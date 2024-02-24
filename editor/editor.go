@@ -14,9 +14,10 @@ const (
 
 // Type for representing the cursor position
 type Cursor struct {
-	X    int
-	Y    int
-	MemX int
+	X          int
+	Y          int
+	MemX       int
+	currentRow int
 }
 
 // Type for the most common data related to the window
@@ -24,28 +25,75 @@ type EditorWindow struct {
 	screen          tcell.Screen
 	Cursor          *Cursor
 	style           tcell.Style
-	endRow          int
+	NumRows         int
+	height          int
+	width           int
 	startRow        int
 	startCol        int
 	lineNumberWidth int
 	contentOffset   int
 }
 
-func New(s tcell.Screen, startRow, endRow, startCol, lineNumberWidth, contentOffset int, style tcell.Style) *EditorWindow {
+func New(s tcell.Screen, startRow, startCol, lineNumberWidth, contentOffset int, style tcell.Style) *EditorWindow {
 	cursor := Cursor{
-		X:    0,
-		Y:    0,
-		MemX: 0,
+		X:          0,
+		Y:          0,
+		MemX:       0,
+		currentRow: 0,
 	}
+	w, h := s.Size()
 	return &EditorWindow{
 		screen:          s,
 		Cursor:          &cursor,
-		endRow:          endRow,
+		height:          h,
+		width:           w,
 		startRow:        startRow,
 		startCol:        startCol,
 		lineNumberWidth: lineNumberWidth,
 		contentOffset:   contentOffset,
 		style:           style,
+	}
+}
+
+func (ew *EditorWindow) MoveY(numRows int) {
+	if numRows > 0 {
+		// Check if we should move the window down
+		if ew.Cursor.Y+numRows+5 >= ew.height && ew.startRow+numRows+ew.height-1 <= ew.NumRows+1 {
+			ew.startRow = min(ew.startRow+numRows, ew.NumRows+1)
+		} else {
+			ew.Cursor.Y += numRows
+		}
+	} else {
+		// Check if we should move the window up
+		if ew.Cursor.Y+numRows-5 <= 0 && ew.startRow+numRows >= 0 {
+			ew.startRow = max(ew.startRow+numRows, 0)
+		} else {
+			ew.Cursor.Y = max(numRows+ew.Cursor.Y, 0)
+		}
+	}
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func (ew *EditorWindow) MoveX(numCols int) {
+	ew.Cursor.X += numCols
+}
+
+func (ew *EditorWindow) MoveWindowX(numCols int) {
+	ew.startCol += numCols
+	if ew.startCol < 0 {
+		ew.startCol = 0
 	}
 }
 
@@ -64,7 +112,7 @@ func (ew *EditorWindow) DrawLineNumbers() {
 	style := tcell.StyleDefault
 
 	for i := 0; i < height; i++ {
-		str := fmt.Sprint(i)
+		str := fmt.Sprint(i + ew.startRow)
 		off := ew.lineNumberWidth - len(str)
 		for j, r := range str {
 			ew.screen.SetContent(j+off, i, r, nil, style)
@@ -80,12 +128,17 @@ func (ew *EditorWindow) DrawContent(content string) {
 		if r == '\n' {
 			row++
 			col = ew.contentOffset
-			ew.screen.SetContent(col, row, r, nil, ew.style)
+			if row >= ew.startRow {
+				ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+			}
 		} else {
-			ew.screen.SetContent(col, row, r, nil, ew.style)
+			if row >= ew.startRow {
+				ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+			}
 			col++
 		}
 	}
+	ew.NumRows = row
 }
 
 // Draw a statusbar showing line:col numbers, filename, mode and if there are unsaved changes
@@ -95,7 +148,7 @@ func (ew *EditorWindow) DrawStatus(mode int, filename string, unsavedChanges boo
 
 	// Draw information
 	curEnd := drawMode(ew.screen, mode, h, style)
-	curEnd = drawCursorPositionStatus(ew.screen, ew.Cursor.X, ew.Cursor.Y, curEnd, h, style)
+	curEnd = drawCursorPositionStatus(ew.screen, ew.Cursor.X+ew.startCol, ew.Cursor.Y+ew.startRow, curEnd, h, style)
 	curEnd = drawFileStatus(ew.screen, filename, unsavedChanges, curEnd, h, style)
 
 	// Fill the rest of the row

@@ -87,9 +87,8 @@ func main() {
 	unsavedChanges := false
 	mode := NORMAL
 	c := 0
-	_, h := s.Size()
 
-	editor := editor.New(s, 0, h, 0, 5, 7, defStyle)
+	editor := editor.New(s, 0, 0, 5, 7, defStyle)
 
 	editor.DrawFull(content.GetContent(), *filename, unsavedChanges, mode)
 
@@ -122,7 +121,7 @@ func main() {
 				nextRune := content.Index(c + 1)
 				if nextRune != "\n" && nextRune != "" {
 					c++
-					//editor.Cursor.X++
+					editor.Cursor.X++
 				}
 			} else if ev.Key() == tcell.KeyLeft {
 				if editor.Cursor.X > 0 {
@@ -136,8 +135,7 @@ func main() {
 				if minMove != -1 {
 					// Note: this moves us after the newline
 					c = minMove
-					//x = 0
-					editor.Cursor.Y++
+					editor.MoveY(1)
 					// Check if we can move the pointer foward to the old x position
 					lineEnd := content.SearchChar('\n', c+1)
 					if lineEnd != -1 {
@@ -163,7 +161,7 @@ func main() {
 					lineEnd, err := content.SearchCharReverse('\n', c)
 					if lineEnd != -1 && err == nil {
 						// Move up
-						editor.Cursor.Y--
+						editor.MoveY(-1)
 						// Find start of last row
 						lineStart, err := content.SearchCharReverse('\n', lineEnd-1)
 						if err == nil {
