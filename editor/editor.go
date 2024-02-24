@@ -143,10 +143,6 @@ func (ew *EditorWindow) DrawContent(content string) {
 	activeRow := tcell.StyleDefault.Background(tcell.Color24).Foreground(tcell.ColorReset)
 	for _, r := range content {
 		if r == '\n' {
-			// Fill rest of activeRow if that is the current row
-			if row-ew.startRow == ew.Cursor.Y {
-				epicCol = col
-			}
 			row++
 			col = ew.contentOffset
 			if row >= ew.startRow {
@@ -155,18 +151,17 @@ func (ew *EditorWindow) DrawContent(content string) {
 		} else {
 			if row >= ew.startRow && row <= ew.startRow+ew.height {
 				if row-ew.startRow == ew.Cursor.Y {
-
 					ew.screen.SetContent(col, row-ew.startRow, r, nil, activeRow)
+					epicCol = col
 				} else {
 					ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
-
 				}
 			}
 			col++
 		}
 	}
-	// Fill rest of activeRow if the active row is the last one
-	for i := epicCol; i < ew.width; i++ {
+	// Fill rest of activeRow
+	for i := epicCol + 1; i < ew.width; i++ {
 		ew.screen.SetContent(i, ew.Cursor.Y, ' ', nil, activeRow)
 	}
 	ew.NumRows = row
