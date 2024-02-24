@@ -109,13 +109,28 @@ func (ew *EditorWindow) DrawFull(content, fileName string, unsavedChanges bool, 
 // Draw line numbers
 func (ew *EditorWindow) DrawLineNumbers() {
 	_, height := ew.screen.Size()
-	style := tcell.StyleDefault
+	style := tcell.StyleDefault.Foreground(tcell.Color140)
+	activeRow := tcell.StyleDefault.Foreground(tcell.ColorReset)
 
 	for i := 0; i < height; i++ {
-		str := fmt.Sprint(i + ew.startRow)
-		off := ew.lineNumberWidth - len(str)
-		for j, r := range str {
-			ew.screen.SetContent(j+off, i, r, nil, style)
+		if i < ew.Cursor.Y {
+			str := fmt.Sprint(ew.Cursor.Y - i)
+			off := ew.lineNumberWidth - len(str)
+			for j, r := range str {
+				ew.screen.SetContent(j+off, i, r, nil, style)
+			}
+		} else if i > ew.Cursor.Y {
+			str := fmt.Sprint(i - ew.Cursor.Y)
+			off := ew.lineNumberWidth - len(str)
+			for j, r := range str {
+				ew.screen.SetContent(j+off, i, r, nil, style)
+			}
+		} else {
+			str := fmt.Sprint(i + ew.startRow)
+			off := ew.lineNumberWidth - len(str)
+			for j, r := range str {
+				ew.screen.SetContent(j+off, i, r, nil, activeRow)
+			}
 		}
 	}
 }
@@ -124,19 +139,35 @@ func (ew *EditorWindow) DrawLineNumbers() {
 func (ew *EditorWindow) DrawContent(content string) {
 	row := 0
 	col := ew.contentOffset
+	epicCol := col
+	activeRow := tcell.StyleDefault.Background(tcell.Color24).Foreground(tcell.ColorReset)
 	for _, r := range content {
 		if r == '\n' {
+			// Fill rest of activeRow if that is the current row
+			if row-ew.startRow == ew.Cursor.Y {
+				epicCol = col
+			}
 			row++
 			col = ew.contentOffset
 			if row >= ew.startRow {
 				ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
 			}
 		} else {
-			if row >= ew.startRow {
-				ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+			if row >= ew.startRow && row <= ew.startRow+ew.height {
+				if row-ew.startRow == ew.Cursor.Y {
+
+					ew.screen.SetContent(col, row-ew.startRow, r, nil, activeRow)
+				} else {
+					ew.screen.SetContent(col, row-ew.startRow, r, nil, ew.style)
+
+				}
 			}
 			col++
 		}
+	}
+	// Fill rest of activeRow if the active row is the last one
+	for i := epicCol; i < ew.width; i++ {
+		ew.screen.SetContent(i, ew.Cursor.Y, ' ', nil, activeRow)
 	}
 	ew.NumRows = row
 }
@@ -170,7 +201,6 @@ func drawFileStatus(s tcell.Screen, fileName string, unsavedChanges bool, startA
 	}
 	s.SetContent(len(info)+startAt, height-1, rune(' '), nil, style)
 	return startAt + len(info)
-
 }
 
 // Draw the current line and col number in the status bar

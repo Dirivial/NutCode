@@ -27,12 +27,15 @@ I very much doubt that I will add syntax highlighting.
 
 - [x] Reading text files
 - [x] Writing to text files
-- [x] Scrolling on large text content
+- [ ] Scrolling on large text content
 
-- [ ] Displaying line numbers
+  - [x] Y-axis
+  - [ ] X-axis
 
-  - [ ] Highlight current line
-  - [ ] Relative numbers
+- [x] Displaying line numbers
+
+  - [x] Highlight current line
+  - [x] Relative numbers
 
 - [ ] Cursor should remember column
 
