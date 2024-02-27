@@ -2,6 +2,7 @@ package editor
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -117,10 +118,15 @@ func (ew *EditorWindow) MoveX(numCols int) {
 }
 
 func (ew *EditorWindow) SetX(col int) {
-	ew.ResetX()
 
-	for i := 0; i < col; i++ {
-		ew.MoveX(1)
+	windowSize := ew.width - ew.contentOffset
+	if col > windowSize {
+		leftSpace := int(math.Floor(float64(windowSize/3) * 2))
+		ew.StartCol = col - leftSpace
+		ew.Cursor.X = col - ew.StartCol
+	} else {
+		ew.StartCol = 0
+		ew.Cursor.X = col
 	}
 }
 
