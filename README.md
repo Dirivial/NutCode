@@ -37,8 +37,6 @@ I very much doubt that I will add syntax highlighting.
   - [x] Highlight current line
   - [x] Relative numbers
 
-- [ ] Cursor should remember column
-
 ## Dependencies
 
 I'm using [tcell (note: v2)](https://github.com/gdamore/tcell) to manage

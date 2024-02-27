@@ -14,9 +14,8 @@ const (
 
 // Type for representing the cursor position
 type Cursor struct {
-	X    int
-	Y    int
-	MemX int
+	X int
+	Y int
 }
 
 // Type for the most common data related to the window
@@ -35,9 +34,8 @@ type EditorWindow struct {
 
 func New(s tcell.Screen, startRow, StartCol, lineNumberWidth, contentOffset int, style tcell.Style) *EditorWindow {
 	cursor := Cursor{
-		X:    0,
-		Y:    0,
-		MemX: 0,
+		X: 0,
+		Y: 0,
 	}
 	w, h := s.Size()
 	return &EditorWindow{
@@ -119,16 +117,10 @@ func (ew *EditorWindow) MoveX(numCols int) {
 }
 
 func (ew *EditorWindow) SetX(col int) {
-	offset := ew.contentOffset + ew.lineNumberWidth
-	if col+5 > ew.width-offset {
-		// Column outside width
-		ew.StartCol = col + 5 - ew.height
-		ew.Cursor.X = col + 5 - ew.StartCol
+	ew.ResetX()
 
-	} else {
-		// Column not outside width
-		ew.StartCol = 0
-		ew.Cursor.X = col
+	for i := 0; i < col; i++ {
+		ew.MoveX(1)
 	}
 }
 
