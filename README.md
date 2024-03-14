@@ -1,4 +1,4 @@
-# NutCode
+# SmolPad
 
 A text editor written in Go :)
 
